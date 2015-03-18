@@ -4,7 +4,7 @@ static int line = 1;
 static int col = 1;
 %}
 
-%option caseless
+%option yylineno
 
 int                                     [0-9]+
 whitespace                              [ \t\v\f]*
@@ -15,7 +15,7 @@ string                                  '(''|[^\n])+'
 ({int}"."{int})|({int}e[+-]?{int})      {printf("REALLIT(%s)\n", yytext);}
 {string}                                {yytext[strlen(yytext)-1] = '\0';
                                          printf("STRING(%s)\n", yytext+1);}
-'(''|[^\n])+                            {printf("Line %d, col %d: unterminated string\n", line, col);}
+'(''|[^\n])+                            {printf("Line %d, col %d: unterminated string\n", yylineno, col);}
 
 ":="                                    {printf("ASSIGN\n");}
 "begin"                                 {printf("BEGIN\n");}
@@ -51,10 +51,10 @@ string                                  '(''|[^\n])+'
 
 [a-zA-Z][0-9a-zA-Z]*					{printf("ID(%s)\n", yytext);}
 
-\n                                      {col = 1; line++;}
+\n                                      {col = 1;}
 {whitespace}                            {col += yyleng;}
 
-.                                       {printf("Line %d, col %d: illegal character ('%c')\n", line, col, yytext);}
+.                                       {printf("Line %d, col %d: illegal character ('%c')\n", yylineno, col, yytext);}
 
 %%
 int main() {
