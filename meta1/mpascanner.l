@@ -5,12 +5,20 @@ static int col = 1;
 %}
 
 %option yylineno
+%x COMMENT
 
 int                                     [0-9]+
 whitespace                              [ \t\v\f]*
 string                                  '(''|[^\n])+'
 
 %%
+
+"{"|"(*"                  {BEGIN(COMMENT);}
+<COMMENT>"}"|"*)"         {BEGIN(0);}
+<COMMENT>.                {;}
+<COMMENT>\n               {col = 1;}
+<COMMENT><<EOF>>          {BEGIN(0); {printf("Line %d, col %d: unterminated comment\n", yylineno, col);}}
+
 {int}                                   {printf("INTLIT(%s)\n", yytext);}
 ({int}"."{int})|({int}e[+-]?{int})      {printf("REALLIT(%s)\n", yytext);}
 {string}                                {yytext[strlen(yytext)-1] = '\0';
