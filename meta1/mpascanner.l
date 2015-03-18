@@ -5,6 +5,7 @@ static int col = 1;
 %}
 
 %option yylineno
+%option case-insensitive
 %x COMMENT
 
 int                                     [0-9]+
@@ -55,14 +56,14 @@ string                                  '(''|[^\n])+'
 "+"|"-"                                 {printf("OP3(%s)\n", yytext);}
 "*"|"/"|"mod"|"div"                     {printf("OP4(%s)\n", yytext);}
 
-"abs"|"arctan"|"char"|"chr"|"cos"|"dispose"|"eof"|"eoln"|"exp"|"get"|"input"|"ln"|"maxint"|"new"|"odd"|"ord"|"output"|"pack"|"page"|"pred"|"put"|"read"|"readln"|"reset"|"rewrite"|"round"|"sin"|"sqr"|"sqrt"|"succ"|"text"|"trunc"|"unpack"|"write"          {printf("RESERVED(%s)\n", yytext);}
+"abs"|"arctan"|"array"|"case"|"char"|"chr"|"const"|"cos"|"dispose"|"downto"|"eof"|"eoln"|"exp"|"file"|"for"|"get"|"goto"|"in"|"input"|"label"|"ln"|"maxint"|"new"|"nil"|"odd"|"of"|"ord"|"output"|"pack"|"packed"|"page"|"pred"|"procedure"|"put"|"read"|"readln"|"record"|"reset"|"rewrite"|"round"|"sin"|"sqr"|"sqrt"|"succ"|"text"|"to"|"trunc"|"type"|"unpack"|"with"|"write"          {printf("RESERVED(%s)\n", yytext);}
 
 [a-zA-Z][0-9a-zA-Z]*					{printf("ID(%s)\n", yytext);}
 
 \n                                      {col = 1;}
 {whitespace}                            {col += yyleng;}
 
-.                                       {printf("Line %d, col %d: illegal character ('%c')\n", yylineno, col, yytext);}
+.                                       {printf("Line %d, col %d: illegal character ('%c')\n", yylineno, col, yytext[0]);}
 
 %%
 int main() {
