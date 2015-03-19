@@ -1,0 +1,17 @@
+teste1
+'teste2'
+'teste3
+'teste4'teste4'
+'teste5'teste5'teste5'
+'teste6 teste6''teste6'''
+'teste7 teste7''teste7''''
+'teste8 teste8''teste8'''''
+1
+12
+2.0
+3e4
+3.0e4
+3e+4
+3e-4
+3.0e+4
+3.0e-4
