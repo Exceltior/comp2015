@@ -1,7 +1,7 @@
 %{
 #include <stdio.h>
 static int col = 1;
-static int auxLine;
+static int auxLine, auxCol;
 %}
 
 %option yylineno
@@ -16,11 +16,11 @@ string                                              '(''|[^'\n])*'
 
 %%
 
-"{"|"(*"                                            {BEGIN(COMMENT); auxLine = yylineno; col += yyleng;}
+"{"|"(*"                                            {BEGIN(COMMENT); auxLine = yylineno; auxCol = col; col += yyleng;}
 <COMMENT>"}"|"*)"                                   {BEGIN(0); col += yyleng;}
 <COMMENT>.                                          {col += yyleng;}
-<COMMENT>\n                                         {;}
-<COMMENT><<EOF>>                                    {BEGIN(0); {printf("Line %d, col %d: unterminated comment\n", auxLine, col);}}
+<COMMENT>\n                                         {col = 1;}
+<COMMENT><<EOF>>                                    {BEGIN(0); {printf("Line %d, col %d: unterminated comment\n", auxLine, auxCol);}}
 
 {int}                                               {printf("INTLIT(%s)\n", yytext); col+=yyleng; }
 {reallit}   					                    {printf("REALLIT(%s)\n", yytext); col+=yyleng; }

@@ -708,7 +708,7 @@ char *yytext;
 #line 2 "mpascanner.l"
 #include <stdio.h>
 static int col = 1;
-static int auxLine;
+static int auxLine, auxCol;
 
 #line 714 "lex.yy.c"
 
@@ -998,27 +998,27 @@ do_action:	/* This label is used only to access EOF actions. */
 case 1:
 YY_RULE_SETUP
 #line 19 "mpascanner.l"
-{BEGIN(COMMENT); auxLine = yylineno;}
+{BEGIN(COMMENT); auxLine = yylineno; auxCol = col; col += yyleng;}
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
 #line 20 "mpascanner.l"
-{BEGIN(0);}
+{BEGIN(0); col += yyleng;}
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
 #line 21 "mpascanner.l"
-{;}
+{col += yyleng;}
 	YY_BREAK
 case 4:
 /* rule 4 can match eol */
 YY_RULE_SETUP
 #line 22 "mpascanner.l"
-{;}
+{col = 1;}
 	YY_BREAK
 case YY_STATE_EOF(COMMENT):
 #line 23 "mpascanner.l"
-{BEGIN(0); {printf("Line %d, col %d: unterminated comment\n", auxLine, col);}}
+{BEGIN(0); {printf("Line %d, col %d: unterminated comment\n", auxLine, auxCol);}}
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
