@@ -141,15 +141,7 @@ typedef unsigned int flex_uint32_t;
 
 /* Size of default input buffer. */
 #ifndef YY_BUF_SIZE
-#ifdef __ia64__
-/* On IA-64, the buffer size is 16k, not 8k.
- * Moreover, YY_BUF_SIZE is 2*YY_READ_BUF_SIZE in the general case.
- * Ditto for the __ia64__ case accordingly.
- */
-#define YY_BUF_SIZE 32768
-#else
 #define YY_BUF_SIZE 16384
-#endif /* __ia64__ */
 #endif
 
 /* The state buf must be large enough to hold one state per character in the main buffer.
@@ -706,8 +698,9 @@ char *yytext;
 #line 2 "mpascanner.l"
 #include <stdio.h>
 static int col = 1;
+static int auxLine;
 
-#line 711 "lex.yy.c"
+#line 704 "lex.yy.c"
 
 #define INITIAL 0
 #define COMMENT 1
@@ -789,12 +782,7 @@ static int input (void );
 
 /* Amount of stuff to slurp up with each read. */
 #ifndef YY_READ_BUF_SIZE
-#ifdef __ia64__
-/* On IA-64, the buffer size is 16k, not 8k */
-#define YY_READ_BUF_SIZE 16384
-#else
 #define YY_READ_BUF_SIZE 8192
-#endif /* __ia64__ */
 #endif
 
 /* Copy whatever the last rule matched to the standard output. */
@@ -922,10 +910,10 @@ YY_DECL
 		}
 
 	{
-#line 16 "mpascanner.l"
+#line 17 "mpascanner.l"
 
 
-#line 929 "lex.yy.c"
+#line 917 "lex.yy.c"
 
 	while ( 1 )		/* loops until end-of-file is reached */
 		{
@@ -994,227 +982,227 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 18 "mpascanner.l"
-{BEGIN(COMMENT);}
+#line 19 "mpascanner.l"
+{BEGIN(COMMENT); auxLine = yylineno;}
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 19 "mpascanner.l"
+#line 20 "mpascanner.l"
 {BEGIN(0);}
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 20 "mpascanner.l"
+#line 21 "mpascanner.l"
 {;}
 	YY_BREAK
 case 4:
 /* rule 4 can match eol */
 YY_RULE_SETUP
-#line 21 "mpascanner.l"
-{col = 1;}
+#line 22 "mpascanner.l"
+{;}
 	YY_BREAK
 case YY_STATE_EOF(COMMENT):
-#line 22 "mpascanner.l"
-{BEGIN(0); {printf("Line %d, col %d: unterminated comment\n", yylineno-1, col);}}
+#line 23 "mpascanner.l"
+{BEGIN(0); {printf("Line %d, col %d: unterminated comment\n", auxLine, col);}}
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 24 "mpascanner.l"
-{printf("INTLIT(%s)\n", yytext);}
+#line 25 "mpascanner.l"
+{printf("INTLIT(%s)\n", yytext); col+=yyleng; }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 25 "mpascanner.l"
-{printf("REALLIT(%s)\n", yytext);}
+#line 26 "mpascanner.l"
+{printf("REALLIT(%s)\n", yytext); col+=yyleng; }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 26 "mpascanner.l"
+#line 27 "mpascanner.l"
 {yytext[strlen(yytext)-1] = '\0';
                                                      printf("STRING('%s')\n", yytext+1); col += yyleng;}
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 28 "mpascanner.l"
+#line 29 "mpascanner.l"
 {printf("Line %d, col %d: unterminated string\n", yylineno, col);}
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 30 "mpascanner.l"
-{printf("ASSIGN\n");}
+#line 31 "mpascanner.l"
+{printf("ASSIGN\n"); col+=yyleng;}
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 31 "mpascanner.l"
-{printf("BEGIN\n");}
+#line 32 "mpascanner.l"
+{printf("BEGIN\n"); col+=yyleng;}
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 32 "mpascanner.l"
-{printf("COLON\n");}
+#line 33 "mpascanner.l"
+{printf("COLON\n"); col+=yyleng;}
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 33 "mpascanner.l"
-{printf("COMMA\n");}
+#line 34 "mpascanner.l"
+{printf("COMMA\n"); col+=yyleng;}
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 34 "mpascanner.l"
-{printf("DO\n");}
+#line 35 "mpascanner.l"
+{printf("DO\n"); col+=yyleng;}
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 35 "mpascanner.l"
-{printf("DOT\n");}
+#line 36 "mpascanner.l"
+{printf("DOT\n"); col+=yyleng;}
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 36 "mpascanner.l"
-{printf("ELSE\n");}
+#line 37 "mpascanner.l"
+{printf("ELSE\n"); col+=yyleng;}
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 37 "mpascanner.l"
-{printf("END\n");}
+#line 38 "mpascanner.l"
+{printf("END\n"); col+=yyleng;}
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 38 "mpascanner.l"
-{printf("FORWARD\n");}
+#line 39 "mpascanner.l"
+{printf("FORWARD\n"); col+=yyleng;}
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 39 "mpascanner.l"
-{printf("FUNCTION\n");}
+#line 40 "mpascanner.l"
+{printf("FUNCTION\n"); col+=yyleng;}
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 40 "mpascanner.l"
-{printf("IF\n");}
+#line 41 "mpascanner.l"
+{printf("IF\n"); col+=yyleng;}
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 41 "mpascanner.l"
-{printf("LBRAC\n");}
+#line 42 "mpascanner.l"
+{printf("LBRAC\n"); col+=yyleng;}
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 42 "mpascanner.l"
-{printf("NOT\n");}
+#line 43 "mpascanner.l"
+{printf("NOT\n"); col+=yyleng;}
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 43 "mpascanner.l"
-{printf("OUTPUT\n");}
+#line 44 "mpascanner.l"
+{printf("OUTPUT\n"); col+=yyleng;}
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 44 "mpascanner.l"
-{printf("PARAMSTR\n");}
+#line 45 "mpascanner.l"
+{printf("PARAMSTR\n"); col+=yyleng;}
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 45 "mpascanner.l"
-{printf("PROGRAM\n");}
+#line 46 "mpascanner.l"
+{printf("PROGRAM\n"); col+=yyleng;}
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 46 "mpascanner.l"
-{printf("RBRAC\n");}
+#line 47 "mpascanner.l"
+{printf("RBRAC\n"); col+=yyleng;}
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 47 "mpascanner.l"
-{printf("REPEAT\n");}
+#line 48 "mpascanner.l"
+{printf("REPEAT\n"); col+=yyleng;}
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 48 "mpascanner.l"
-{printf("SEMIC\n");}
+#line 49 "mpascanner.l"
+{printf("SEMIC\n"); col+=yyleng;}
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 49 "mpascanner.l"
-{printf("THEN\n");}
+#line 50 "mpascanner.l"
+{printf("THEN\n"); col+=yyleng;}
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 50 "mpascanner.l"
-{printf("UNTIL\n");}
+#line 51 "mpascanner.l"
+{printf("UNTIL\n"); col+=yyleng;}
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 51 "mpascanner.l"
-{printf("VAL\n");}
+#line 52 "mpascanner.l"
+{printf("VAL\n"); col+=yyleng;}
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 52 "mpascanner.l"
-{printf("VAR\n");}
+#line 53 "mpascanner.l"
+{printf("VAR\n"); col+=yyleng;}
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 53 "mpascanner.l"
-{printf("WHILE\n");}
+#line 54 "mpascanner.l"
+{printf("WHILE\n"); col+=yyleng;}
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 54 "mpascanner.l"
-{printf("WRITELN\n");}
+#line 55 "mpascanner.l"
+{printf("WRITELN\n"); col+=yyleng;}
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 55 "mpascanner.l"
-{printf("OP1(%s)\n", yytext);}
+#line 56 "mpascanner.l"
+{printf("OP1(%s)\n", yytext); col+=yyleng;}
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 56 "mpascanner.l"
-{printf("OP2(%s)\n", yytext);}
+#line 57 "mpascanner.l"
+{printf("OP2(%s)\n", yytext); col+=yyleng;}
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 57 "mpascanner.l"
-{printf("OP3(%s)\n", yytext);}
+#line 58 "mpascanner.l"
+{printf("OP3(%s)\n", yytext); col+=yyleng;}
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 58 "mpascanner.l"
-{printf("OP4(%s)\n", yytext);}
+#line 59 "mpascanner.l"
+{printf("OP4(%s)\n", yytext); col+=yyleng;}
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 60 "mpascanner.l"
-{printf("RESERVED(%s)\n", yytext);}
+#line 61 "mpascanner.l"
+{printf("RESERVED(%s)\n", yytext); col+=yyleng;}
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 62 "mpascanner.l"
-{printf("ID(%s)\n", yytext);}
+#line 63 "mpascanner.l"
+{printf("ID(%s)\n", yytext); col+=yyleng;}
 	YY_BREAK
 case 40:
 /* rule 40 can match eol */
 YY_RULE_SETUP
-#line 64 "mpascanner.l"
+#line 65 "mpascanner.l"
 {col = 1;}
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 65 "mpascanner.l"
+#line 66 "mpascanner.l"
 {col += yyleng;}
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 67 "mpascanner.l"
-{printf("Line %d, col %d: illegal character ('%c')\n", yylineno, col, yytext[0]);}
+#line 68 "mpascanner.l"
+{printf("Line %d, col %d: illegal character ('%c')\n", yylineno, col, yytext[0]); col += yyleng;}
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 69 "mpascanner.l"
+#line 70 "mpascanner.l"
 ECHO;
 	YY_BREAK
-#line 1218 "lex.yy.c"
+#line 1206 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -2221,7 +2209,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 68 "mpascanner.l"
+#line 70 "mpascanner.l"
 
 
 int main() {
