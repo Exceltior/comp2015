@@ -58,7 +58,7 @@ string                                              '(''|[^'\n])*'
 "+"|"-"                                             {printf("OP3(%s)\n", yytext); col+=yyleng;}
 "*"|"/"|"mod"|"div"                                 {printf("OP4(%s)\n", yytext); col+=yyleng;}
 
-"abs"|"arctan"|"array"|"case"|"char"|"chr"|"const"|"cos"|"dispose"|"downto"|"eof"|"eoln"|"exp"|"file"|"for"|"get"|"goto"|"in"|"input"|"label"|"ln"|"maxint"|"new"|"nil"|"odd"|"of"|"ord"|"output"|"pack"|"packed"|"page"|"pred"|"procedure"|"put"|"read"|"readln"|"record"|"reset"|"rewrite"|"round"|"sin"|"sqr"|"sqrt"|"succ"|"text"|"to"|"trunc"|"type"|"unpack"|"with"|"write"          {printf("RESERVED(%s)\n", yytext); col+=yyleng;}
+"abs"|"arctan"|"array"|"case"|"char"|"chr"|"const"|"cos"|"dispose"|"downto"|"eof"|"eoln"|"exp"|"file"|"for"|"get"|"goto"|"in"|"input"|"label"|"ln"|"maxint"|"new"|"nil"|"odd"|"of"|"ord"|"pack"|"packed"|"page"|"pred"|"procedure"|"put"|"read"|"readln"|"record"|"reset"|"rewrite"|"round"|"set"|"sqr"|"sin"|"sqrt"|"succ"|"text"|"to"|"trunc"|"type"|"unpack"|"with"|"write"          {printf("RESERVED(%s)\n", yytext); col+=yyleng;}
 
 [a-zA-Z][0-9a-zA-Z]*					            {printf("ID(%s)\n", yytext); col+=yyleng;}
 
@@ -76,3 +76,6 @@ int main() {
 int yywrap() {
     return 1;
 }
+
+
+
