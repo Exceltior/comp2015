@@ -16,9 +16,9 @@ string                                              '(''|[^'\n])*'
 
 %%
 
-"{"|"(*"                                            {BEGIN(COMMENT); auxLine = yylineno;}
-<COMMENT>"}"|"*)"                                   {BEGIN(0);}
-<COMMENT>.                                          {;}
+"{"|"(*"                                            {BEGIN(COMMENT); auxLine = yylineno; col += yyleng;}
+<COMMENT>"}"|"*)"                                   {BEGIN(0); col += yyleng;}
+<COMMENT>.                                          {col += yyleng;}
 <COMMENT>\n                                         {;}
 <COMMENT><<EOF>>                                    {BEGIN(0); {printf("Line %d, col %d: unterminated comment\n", auxLine, col);}}
 
