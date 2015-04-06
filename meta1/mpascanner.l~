@@ -20,7 +20,7 @@ string                                              '(''|[^'\n])*'
 <COMMENT>"}"|"*)"                                   {BEGIN(0); col += yyleng;}
 <COMMENT>.                                          {col += yyleng;}
 <COMMENT>\n                                         {col = 1;}
-<COMMENT><<EOF>>                                    {BEGIN(0); {printf("Line %d, col %d: unterminated comment\n", auxLine, col);}}
+<COMMENT><<EOF>>                                    {BEGIN(0); {printf("Line %d, col %d: unterminated comment\n", auxLine, auxCol);}}
 
 {int}                                               {printf("INTLIT(%s)\n", yytext); col+=yyleng; }
 {reallit}   					                    {printf("REALLIT(%s)\n", yytext); col+=yyleng; }
