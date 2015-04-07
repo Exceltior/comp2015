@@ -17,6 +17,11 @@
 	char* reallit, *string, *id, *op1, *op2, *op3, *op4;
 }
 
+%left OP3
+%left OP4
+%left OP1
+%left OP2
+
 %%
 
 Prog: 			ProgHeading SEMIC ProgBlock DOT
@@ -28,20 +33,17 @@ ProgBlock: 		VarPart FuncPart StatPart
 VarPart: 		VAR VarDeclaration SEMIC VarPartAux
 		|	%empty
 
-VarPartAux:		VarDeclaration SEMIC
-		|	VarDeclaration SEMIC VarPartAux
+VarPartAux: 	VarDeclaration SEMIC VarPartAux
 		|	%empty
 
 VarDeclaration: 	IDList COLON ID
 
 IDList: 		ID IDListAux
 
-IDListAux:		COMMA ID
-		|	COMMA ID IDListAux
+IDListAux:	COMMA ID IDListAux
 		|	%empty
 
-FuncPart: 		FuncDeclaration SEMIC
-		|	FuncDeclaration SEMIC FuncPart
+FuncPart:  FuncDeclaration SEMIC FuncPart
 		|	%empty
 
 FuncDeclaration: 	FuncHeading SEMIC FORWARD
@@ -58,8 +60,7 @@ FuncIdent:		FUNCTION ID
 
 FormalParamList: 	LBRAC FormalParams FormalParamListAux RBRAC
 
-FormalParamListAux: 	SEMIC FormalParams
-		|	SEMIC FormalParams | FormalParamListAux
+FormalParamListAux: 	SEMIC FormalParams | FormalParamListAux
 		|	%empty
 
 FormalParams:		FormalParamsAux IDList COLON ID
@@ -75,8 +76,7 @@ CompStat:		YBEGIN StatList END
 
 StatList: 		Stat SemicStatAux
 
-SemicStatAux:		SEMIC Stat
-		|	SEMIC Stat SemicStatAux
+SemicStatAux:	SEMIC Stat SemicStatAux
 		|	%empty
 
 Stat: 			CompStat
@@ -113,8 +113,7 @@ Expr:			Expr OP1 Expr
 
 ParamList:		LBRAC Expr CommaExprAux RBRAC
 
-CommaExprAux:		COMMA Expr
-		|	COMMA Expr CommaExprAux
+CommaExprAux:	COMMA Expr CommaExprAux
 		|	%empty
 
 
