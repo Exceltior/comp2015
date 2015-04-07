@@ -2,13 +2,19 @@
 #include<stdio.h>
 %}
 
-%token <number> INTLIT
-%token <str> REALLIT STRING ID OP1 OP2 OP3 OP4
+%token <intlit> INTLIT
+%token <reallit> REALLIT
+%token <string> STRING
+%token <id> ID
+%token <op1> OP1
+%token <op2> OP2
+%token <op3> OP3
+%token <op4> OP4
 %token ASSIGN RBRAC DOT REPEAT FUNCTION COMMA VAL END LBRAC WHILE YBEGIN OUTPUT PROGRAM ELSE SEMIC COLON PARAMSTR IF UNTIL DO THEN VAR FORWARD NOT WRITELN RESERVED
 
 %union {
-	int number;
-	char* str;
+	int intlit;
+	char* reallit, *string, *id, *op1, *op2, *op3, *op4;
 }
 
 %%

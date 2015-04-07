@@ -71,10 +71,6 @@ string                                              '(''|[^'\n])*'
 .                                                   {printf("Line %d, col %d: illegal character ('%c')\n", yylineno, col, yytext[0]); col += yyleng;}
 
 %%
-int main() {
-    yylex();
-    return 0;
-}
 
 int yywrap() {
     return 1;
