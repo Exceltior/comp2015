@@ -1,6 +1,8 @@
 %{
 #include <stdio.h>
 #include <string.h>
+#include "y.tab.h"
+
 static int col = 1;
 static int auxLine, auxCol;
 %}
@@ -11,7 +13,7 @@ static int auxLine, auxCol;
 
 int                                                 [0-9]+
 float                                               [0-9]+.[0-9]+
-reallit						    [0-9]+("."[0-9]+)?("e"[+-]?[0-9]+)?
+reallit						                        [0-9]+("."[0-9]+)?("e"[+-]?[0-9]+)?
 whitespace                                          [ \t\v\f]*
 string                                              '(''|[^'\n])*'
 
@@ -24,13 +26,13 @@ string                                              '(''|[^'\n])*'
 <COMMENT><<EOF>>                                    {BEGIN(0); {printf("Line %d, col %d: unterminated comment\n", auxLine, auxCol);}}
 
 {int}                                               {col+=yyleng; yylval.intlit = atoi(yytext); return INTLIT;}
-{reallit}   					    {col+=yyleng; yylval.reallit = (char*)strdup(yytext); return REALLIT;}
+{reallit}   					                    {col+=yyleng; yylval.reallit = (char*)strdup(yytext); return REALLIT;}
 {string}                                            {yytext[strlen(yytext)-1] = '\0'; yytext = yytext + 1;
                                                      yylval.string = (char*)strdup(yytext); col += yyleng; return STRING;}
 '(''|[^'\n])*                                       {printf("Line %d, col %d: unterminated string\n", yylineno, col);}
 
 ":="                                                {col+=yyleng; return ASSIGN;}
-"begin"                                             {col+=yyleng; return BEGIN;}
+"begin"                                             {col+=yyleng; return YBEGIN;}
 ":"                                                 {col+=yyleng; return COLON;}
 ","                                                 {col+=yyleng; return COMMA;}
 "do"                                                {col+=yyleng; return DO;}
@@ -61,7 +63,7 @@ string                                              '(''|[^'\n])*'
 
 "abs"|"arctan"|"array"|"case"|"char"|"chr"|"const"|"cos"|"dispose"|"downto"|"eof"|"eoln"|"exp"|"file"|"for"|"get"|"goto"|"in"|"input"|"label"|"ln"|"maxint"|"new"|"nil"|"odd"|"of"|"ord"|"pack"|"packed"|"page"|"pred"|"procedure"|"put"|"read"|"readln"|"record"|"reset"|"rewrite"|"round"|"set"|"sqr"|"sin"|"sqrt"|"succ"|"text"|"to"|"trunc"|"type"|"unpack"|"with"|"write"          {col+=yyleng; return RESERVED;}
 
-[a-zA-Z][0-9a-zA-Z]*				    {col+=yyleng; yylval.id = (char*)strdup(yytext); return ID;}
+[a-zA-Z][0-9a-zA-Z]*				                {col+=yyleng; yylval.id = (char*)strdup(yytext); return ID;}
 
 \n                                                  {col = 1;}
 {whitespace}                                        {col += yyleng;}
@@ -77,6 +79,3 @@ int main() {
 int yywrap() {
     return 1;
 }
-
-
-
