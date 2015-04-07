@@ -12,51 +12,105 @@
 }
 
 %%
-CompStat:	YBEGIN StatList END
 
-StatList: 	Stat SemicStatAux
+Prog: 			ProgHeading SEMIC ProgBlock DOT
 
-SemicStatAux:	SEMIC Stat
-	|	SEMIC Stat asd
-	|	%empty
+ProgHeading: 		PROGRAM ID LBRAC OUTPUT RBRAC
 
-Stat: 		CompStat
-	|	IF Expr THEN Stat ELSE Stat
-	|	IF Expr THEN Stat
-	|	WHILE Expr DO Stat
-	|	REPEAT StatList UNTIL Expr
-	|	VAL LBRAC PARAMSTR LBRAC Expr RBRAC COMMA ID RBRAC
-	|	ID ASSIGN Expr
-	|	WRITELN WritelnPList
-	|	WRITELN
-	|	%empty
+ProgBlock: 		VarPart FuncPart StatPart
 
-WritelnPList:	LBRAC Expr CommaExpStrAux RBRAC
-	|	LBRAC STRING CommaExpStrAux RBRAC
+VarPart: 		VAR VarDeclaration SEMIC VarPartAux
+		|	%empty
 
-CommaExpStrAux:	COMMA Expr
-	|	COMMA STRING
-	|	COMMA Expr CommaExpStrAux
-	|	COMMA STRING CommaExprStrAux
-	|	%empty
+VarPartAux:		VarDeclaration SEMIC
+		|	VarDeclaration SEMIC VarPartAux
+		|	%empty
 
-Expr:		Expr OP1 Expr 
-	| 	Expr OP2 Expr
-	| 	Expr OP3 Expr 
-	| 	Expr OP4 Expr
-	|	OP3 Expr
-	|	NOT Expr
-	|	LBRAC Expr RBRAC
-	|	INTLIT 
-	| 	REALLIT
-	|	ID ParamList
-	|	ID
+VarDeclaration: 	IDList COLON ID
+
+IDList: 		ID IDListAux
+
+IDListAux:		COMMA ID
+		|	COMMA ID IDListAux
+		|	%empty
+
+FuncPart: 		FuncDeclaration SEMIC
+		|	FuncDeclaration SEMIC FuncPart
+		|	%empty
+
+FuncDeclaration: 	FuncHeading SEMIC FORWARD
+		|	FuncIdent SEMIC FuncBlock
+
+FuncDeclaration: 	FuncHeading SEMIC FuncBlock
+
+FuncHeading: 		FUNCTION ID FuncHeadingAux COLON ID
+
+FuncHeadingAux:		FormalParamList
+		|	%empty
+
+FuncIdent:		FUNCTION ID
+
+FormalParamList: 	LBRAC FormalParams FormalParamListAux RBRAC
+
+FormalParamListAux: 	SEMIC FormalParams
+		|	SEMIC FormalParams | FormalParamListAux
+		|	%empty
+
+FormalParams:		FormalParamsAux IDList COLON ID
+
+FormalParamsAux:	VAR
+		|	%empty
+
+FuncBlock: 		VarPart StatPart
+
+StatPart: 		CompStat
+
+CompStat:		YBEGIN StatList END
+
+StatList: 		Stat SemicStatAux
+
+SemicStatAux:		SEMIC Stat
+		|	SEMIC Stat asd
+		|	%empty
+
+Stat: 			CompStat
+		|	IF Expr THEN Stat ELSE Stat
+		|	IF Expr THEN Stat
+		|	WHILE Expr DO Stat
+		|	REPEAT StatList UNTIL Expr
+		|	VAL LBRAC PARAMSTR LBRAC Expr RBRAC COMMA ID RBRAC
+		|	ID ASSIGN Expr
+		|	WRITELN WritelnPList
+		|	WRITELN
+		|	%empty
+
+WritelnPList:		LBRAC Expr CommaExpStrAux RBRAC
+		|	LBRAC STRING CommaExpStrAux RBRAC
+
+CommaExpStrAux:		COMMA Expr
+		|	COMMA STRING
+		|	COMMA Expr CommaExpStrAux
+		|	COMMA STRING CommaExprStrAux
+		|	%empty
+
+Expr:			Expr OP1 Expr 
+		| 	Expr OP2 Expr
+		| 	Expr OP3 Expr 
+		| 	Expr OP4 Expr
+		|	OP3 Expr
+		|	NOT Expr
+		|	LBRAC Expr RBRAC
+		|	INTLIT 
+		| 	REALLIT
+		|	ID ParamList
+		|	ID
 	
-ParamList:	LBRAC Expr CommaExprAux RBRAC
+ParamList:		LBRAC Expr CommaExprAux RBRAC
 
-CommaExprAux:	COMMA Expr
-	|	COMMA Expr CommaExprAux
-	|	%empty
+CommaExprAux:		COMMA Expr
+		|	COMMA Expr CommaExprAux
+		|	%empty
+
 
 %%
 int main()
