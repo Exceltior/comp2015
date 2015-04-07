@@ -70,7 +70,7 @@ CompStat:		YBEGIN StatList END
 StatList: 		Stat SemicStatAux
 
 SemicStatAux:		SEMIC Stat
-		|	SEMIC Stat asd
+		|	SEMIC Stat SemicStatAux
 		|	%empty
 
 Stat: 			CompStat
@@ -90,21 +90,21 @@ WritelnPList:		LBRAC Expr CommaExpStrAux RBRAC
 CommaExpStrAux:		COMMA Expr
 		|	COMMA STRING
 		|	COMMA Expr CommaExpStrAux
-		|	COMMA STRING CommaExprStrAux
+		|	COMMA STRING CommaExpStrAux
 		|	%empty
 
-Expr:			Expr OP1 Expr 
+Expr:			Expr OP1 Expr
 		| 	Expr OP2 Expr
-		| 	Expr OP3 Expr 
+		| 	Expr OP3 Expr
 		| 	Expr OP4 Expr
 		|	OP3 Expr
 		|	NOT Expr
 		|	LBRAC Expr RBRAC
-		|	INTLIT 
+		|	INTLIT
 		| 	REALLIT
 		|	ID ParamList
 		|	ID
-	
+
 ParamList:		LBRAC Expr CommaExprAux RBRAC
 
 CommaExprAux:		COMMA Expr
