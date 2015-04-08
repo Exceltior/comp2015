@@ -81,7 +81,7 @@ void print_node(node* n, int depth) {
 
 %%
 
-Prog:					ProgHeading SEMIC ProgBlock DOT						{$$ = parsing_tree = create_node("Prog", 2, $1, $3);}
+Prog:					ProgHeading SEMIC ProgBlock DOT						{$$ = parsing_tree = create_node("Program", 2, $1, $3);}
 
 ProgHeading: 			PROGRAM ID LBRAC OUTPUT RBRAC						{$$=create_node("ProgHeading", 1, $2);}
 
@@ -93,7 +93,7 @@ VarPart: 				VAR VarDeclaration SEMIC VarPartAux					{$$=create_node("VarPart", 
 VarPartAux: 			VarDeclaration SEMIC VarPartAux						{$$=create_node("VarPartAux", 2, $1, $3);}
 		|				%empty												{;}
 
-VarDeclaration: 		IDList COLON ID										{$$=create_node("VarDeclaration", 2, $1, $3);}
+VarDeclaration: 		IDList COLON ID										{$$=create_node("VarDecl", 2, $1, $3);}
 
 IDList: 				ID IDListAux										{$$=create_node("IDList", 2, $1, $2);}
 
@@ -103,9 +103,9 @@ IDListAux:				COMMA ID IDListAux									{$$=create_node("IDListAux", 2, $2, $3)
 FuncPart:  				FuncDeclaration SEMIC FuncPart						{$$=create_node("FuncPart", 2, $1, $3);}
 		|				%empty												{;}
 
-FuncDeclaration: 		FuncHeading SEMIC FORWARD							{$$=create_node("FuncDeclaration", 1, $1);}
-		|				FuncIdent SEMIC FuncBlock							{$$=create_node("FuncDeclaration", 2, $1, $3);}
-		|				FuncHeading SEMIC FuncBlock							{$$=create_node("FuncDeclaration", 2, $1, $3);}
+FuncDeclaration: 		FuncHeading SEMIC FORWARD							{$$=create_node("FuncDecl", 1, $1);}
+		|				FuncIdent SEMIC FuncBlock							{$$=create_node("FuncDecl2", 2, $1, $3);}
+		|				FuncHeading SEMIC FuncBlock							{$$=create_node("FuncDecl2", 2, $1, $3);}
 
 FuncHeading: 			FUNCTION ID FuncHeadingAux COLON ID					{$$=create_node("FuncHeading", 3, $2, $3, $5);}
 
@@ -136,14 +136,14 @@ SemicStatAux:			SEMIC Stat SemicStatAux								{$$=create_node("SemicStatAux", 2
 		|				%empty												{;}
 
 Stat: 					CompStat											{$$=create_node("Stat", 1, $1);}
-		|				IF Expr THEN Stat ELSE Stat							{$$=create_node("Stat", 3, $2, $4, $6);}
-		|				IF Expr THEN Stat									{$$=create_node("Stat", 2, $2, $4);}
-		|				WHILE Expr DO Stat									{$$=create_node("Stat", 2, $2, $4);}
-		|				REPEAT StatList UNTIL Expr							{$$=create_node("Stat", 2, $2, $4);}
-		|				VAL LBRAC PARAMSTR LBRAC Expr RBRAC COMMA ID RBRAC 	{$$=create_node("Stat", 2, $5, $8);}
-		|				ID ASSIGN Expr										{$$=create_node("Stat", 2, $1, $3);}
-		|				WRITELN WritelnPList								{$$=create_node("Stat", 1, $2);}
-		|				WRITELN												{$$=create_terminal("Stat", $1);}
+		|				IF Expr THEN Stat ELSE Stat							{$$=create_node("IfElse", 3, $2, $4, $6);}
+		|				IF Expr THEN Stat									{$$=create_node("IfElse", 2, $2, $4);}
+		|				WHILE Expr DO Stat									{$$=create_node("While", 2, $2, $4);}
+		|				REPEAT StatList UNTIL Expr							{$$=create_node("Repeat", 2, $2, $4);}
+		|				VAL LBRAC PARAMSTR LBRAC Expr RBRAC COMMA ID RBRAC 	{$$=create_node("ValParam", 2, $5, $8);}
+		|				ID ASSIGN Expr										{$$=create_node("Assign", 2, $1, $3);}
+		|				WRITELN WritelnPList								{$$=create_node("WriteLn", 1, $2);}
+		|				WRITELN												{$$=create_terminal("WriteLn", $1);}
 		|				%empty												{;}
 
 WritelnPList:			LBRAC Expr CommaExpStrAux RBRAC						{$$=create_node("WritelnPList", 2, $2, $3);}
@@ -153,27 +153,27 @@ CommaExpStrAux:			COMMA Expr CommaExpStrAux							{$$=create_node("CommaExpStrAu
 		|				COMMA STRING CommaExpStrAux							{$$=create_node("CommaExpStrAux", 2, $2, $3);}
 		|				%empty												{;}
 
-Expr:					Expr AND Expr										{$$=create_node("Expr", 2, $1, $3);}
-		|				Expr OR Expr										{$$=create_node("Expr", 2, $1, $3);}
-		|		 		Expr '<' Expr										{$$=create_node("Expr", 2, $1, $3);}
-		|				Expr '>' Expr										{$$=create_node("Expr", 2, $1, $3);}
-		|				Expr '=' Expr										{$$=create_node("Expr", 2, $1, $3);}
-		|				Expr DIF Expr										{$$=create_node("Expr", 2, $1, $3);}
-		|				Expr LESSEQ Expr									{$$=create_node("Expr", 2, $1, $3);}
-		|				Expr GREATEQ Expr									{$$=create_node("Expr", 2, $1, $3);}
-		|				Expr '+' Expr										{$$=create_node("Expr", 2, $1, $3);}
-		|				Expr '-' Expr										{$$=create_node("Expr", 2, $1, $3);}
-		|				Expr '*' Expr										{$$=create_node("Expr", 2, $1, $3);}
-		|		 		Expr MOD Expr										{$$=create_node("Expr", 2, $1, $3);}
-		|				Expr '/' Expr										{$$=create_node("Expr", 2, $1, $3);}
-		|				Expr DIV Expr										{$$=create_node("Expr", 2, $1, $3);}
-		|				'+' Expr											{$$=create_node("Expr", 1, $2);}
-		|				'-' Expr											{$$=create_node("Expr", 1, $2);}
-		|				NOT Expr											{$$=create_node("Expr", 1, $2);}
-		|				LBRAC Expr RBRAC									{$$=create_node("Expr", 1, $2);}
+Expr:					Expr AND Expr										{$$=create_node("And", 2, $1, $3);}
+		|				Expr OR Expr										{$$=create_node("Or", 2, $1, $3);}
+		|		 		Expr '<' Expr										{$$=create_node("Lt", 2, $1, $3);}
+		|				Expr '>' Expr										{$$=create_node("Gt", 2, $1, $3);}
+		|				Expr '=' Expr										{$$=create_node("Eq", 2, $1, $3);}
+		|				Expr DIF Expr										{$$=create_node("Neq", 2, $1, $3);}
+		|				Expr LESSEQ Expr									{$$=create_node("Leq", 2, $1, $3);}
+		|				Expr GREATEQ Expr									{$$=create_node("Geq", 2, $1, $3);}
+		|				Expr '+' Expr										{$$=create_node("Add", 2, $1, $3);}
+		|				Expr '-' Expr										{$$=create_node("Sub", 2, $1, $3);}
+		|				Expr '*' Expr										{$$=create_node("Mul", 2, $1, $3);}
+		|		 		Expr MOD Expr										{$$=create_node("Mod", 2, $1, $3);}
+		|				Expr '/' Expr										{$$=create_node("Div", 2, $1, $3);}
+		|				Expr DIV Expr										{$$=create_node("RealDiv", 2, $1, $3);}
+		|				'+' Expr											{$$=create_node("Plus", 1, $2);}
+		|				'-' Expr											{$$=create_node("Minus", 1, $2);}
+		|				NOT Expr											{$$=create_node("Not", 1, $2);}
+		|				LBRAC Expr RBRAC									{$$=$2;}
 		|				INTLIT												{int aux = $1; $$=create_terminal("IntLit", &aux); /*TODO CONFIRMAR SE ISTO FUNCIONA (void ptr)*/}
 		|			 	REALLIT												{$$=create_terminal("RealLit", $1);}
-		|				ID ParamList										{$$=create_node("Expr", 2, $1, $2);}
+		|				ID ParamList										{$$=create_node("Call", 2, $1, $2);}
 		|				ID													{$$=create_terminal("Id", $1);}
 
 ParamList:				LBRAC Expr CommaExprAux RBRAC						{$$=create_node("ParamList", 2, $2, $3);}
