@@ -56,10 +56,14 @@ string                                              '(''|[^'\n])*'
 "var"                                               {col+=yyleng; return VAR;}
 "while"                                             {col+=yyleng; return WHILE;}
 "writeln"                                           {col+=yyleng; return WRITELN;}
-"and"|"or"                                          {col+=yyleng; yylval.op1 = (char*)strdup(yytext); return OP1;}
-"<"|">"|"="|"<>"|"<="|">="                          {col+=yyleng; yylval.op2 = (char*)strdup(yytext); return OP2;}
-"+"|"-"                                             {col+=yyleng; yylval.op3 = (char*)strdup(yytext); return OP3;}
-"*"|"/"|"mod"|"div"                                 {col+=yyleng; yylval.op4 = (char*)strdup(yytext); return OP4;}
+"and"                 	                            {col+=yyleng; return AND}
+"or"						    {col+=yyleng; return OR}
+"<"|">"|"="|"+"|"-"|"*"|"/"           		    {col+=yyleng; return yytext[0];}
+"<>"						    {col+=yyleng; return DIF;}
+"<="						    {col+=yyleng; return LESSEQ;}
+">="					    	    {col+=yyleng; return GREATEQ;}
+"mod"						    {col+=yyleng; return MOD;}
+"div"                                 		    {col+=yyleng; return DIV;}
 
 "abs"|"arctan"|"array"|"case"|"char"|"chr"|"const"|"cos"|"dispose"|"downto"|"eof"|"eoln"|"exp"|"file"|"for"|"get"|"goto"|"in"|"input"|"label"|"ln"|"maxint"|"new"|"nil"|"odd"|"of"|"ord"|"pack"|"packed"|"page"|"pred"|"procedure"|"put"|"read"|"readln"|"record"|"reset"|"rewrite"|"round"|"set"|"sqr"|"sin"|"sqrt"|"succ"|"text"|"to"|"trunc"|"type"|"unpack"|"with"|"write"          {col+=yyleng; return RESERVED;}
 
