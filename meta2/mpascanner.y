@@ -8,6 +8,7 @@
 typedef struct node {
 	char* type;
 	void* value;
+	int n_children;
 	struct node** children;
 } node;
 
@@ -15,8 +16,9 @@ node* parsing_tree;
 
 node* new_node(char* type, void* value) {
 	node* n = (node*)malloc(sizeof(node));
-	n->type = type;
+	n->type = strdup(type);
 	n->value = value;
+	n->children = 0;
 	return n;
 }
 
@@ -27,6 +29,7 @@ node* create_node(char* type, int n_children, ...) {
 
 	node* parent = new_node(type, NULL);
 	parent->children = (node**)malloc(sizeof(node)*n_children);
+	parent->n_children = n_children;
 
 	for (i=0;i<n_children;i++) {
 		parent->children[i] = va_arg(args, node*);
@@ -39,8 +42,18 @@ node* create_terminal(char* type, void* value) {
 	return new_node(type, value);
 }
 
-void print_parsing_tree() {
-	printf("PARSING TREE\n");
+void print_node(node* n, int depth) {
+	int i;
+
+	char* ident = (char*)malloc(sizeof(char)*depth*2+1);
+	for (i=0;i<depth*2;i++) {
+		ident[i] = '.';
+	}
+	printf("%s%s\n", ident, n->type);
+
+	for (i=0;i<n->n_children;i++) {
+		print_node(n->children[i], depth+1);
+	}
 }
 %}
 
@@ -173,7 +186,7 @@ int main(int argc, char** argv) {
 	yyparse();
 	if (argc > 1) {
 		if (!strcmp(argv[1], OP_PARSING_TREE)) {
-			print_parsing_tree();
+			print_node(parsing_tree, 0);
 		}
 	}
 	return 0;
