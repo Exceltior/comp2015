@@ -1,0 +1,3 @@
+lex mpascanner.l
+yacc -d mpascanner.y
+gcc -o mpascanner y.tab.c lex.yy.c -ly

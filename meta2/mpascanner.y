@@ -23,106 +23,106 @@
 
 %%
 
-Prog: 			ProgHeading SEMIC ProgBlock DOT
+Prog:				ProgHeading SEMIC ProgBlock DOT
 
 ProgHeading: 		PROGRAM ID LBRAC OUTPUT RBRAC
 
-ProgBlock: 		VarPart FuncPart StatPart
+ProgBlock: 			VarPart FuncPart StatPart
 
-VarPart: 		VAR VarDeclaration SEMIC VarPartAux
-		|	%empty
+VarPart: 			VAR VarDeclaration SEMIC VarPartAux
+		|			%empty
 
 VarPartAux: 		VarDeclaration SEMIC VarPartAux
-		|	%empty
+		|			%empty
 
 VarDeclaration: 	IDList COLON ID
 
-IDList: 		ID IDListAux
+IDList: 			ID IDListAux
 
-IDListAux:		COMMA ID IDListAux
-		|	%empty
+IDListAux:			COMMA ID IDListAux
+		|			%empty
 
-FuncPart:  		FuncDeclaration SEMIC FuncPart
-		|	%empty
+FuncPart:  			FuncDeclaration SEMIC FuncPart
+		|			%empty
 
 FuncDeclaration: 	FuncHeading SEMIC FORWARD
-		|	FuncIdent SEMIC FuncBlock
+		|			FuncIdent SEMIC FuncBlock
 
-FuncDeclaration: 	FuncHeading SEMIC FuncBlock 
+FuncDeclaration: 	FuncHeading SEMIC FuncBlock
 
 FuncHeading: 		FUNCTION ID FuncHeadingAux COLON ID
 
 FuncHeadingAux:		FormalParamList
-		|	%empty
+		|			%empty
 
-FuncIdent:		FUNCTION ID
+FuncIdent:			FUNCTION ID
 
 FormalParamList: 	LBRAC FormalParams FormalParamListAux RBRAC
 
 FormalParamListAux: 	SEMIC FormalParams FormalParamListAux
-		|	%empty
+		|				%empty
 
 FormalParams:		FormalParamsAux IDList COLON ID
 
 FormalParamsAux:	VAR
-		|	%empty
+		|			%empty
 
-FuncBlock: 		VarPart StatPart
+FuncBlock: 			VarPart StatPart
 
-StatPart: 		CompStat
+StatPart: 			CompStat
 
-CompStat:		YBEGIN StatList END
+CompStat:			YBEGIN StatList END
 
-StatList: 		Stat SemicStatAux
+StatList: 			Stat SemicStatAux
 
 SemicStatAux:		SEMIC Stat SemicStatAux
-		|	%empty
+		|			%empty
 
-Stat: 			CompStat
-		|	IF Expr THEN Stat ELSE Stat
-		|	IF Expr THEN Stat
-		|	WHILE Expr DO Stat
-		|	REPEAT StatList UNTIL Expr
-		|	VAL LBRAC PARAMSTR LBRAC Expr RBRAC COMMA ID RBRAC
-		|	ID ASSIGN Expr
-		|	WRITELN WritelnPList
-		|	WRITELN
-		|	%empty
+Stat: 				CompStat
+		|			IF Expr THEN Stat ELSE Stat
+		|			IF Expr THEN Stat
+		|			WHILE Expr DO Stat
+		|			REPEAT StatList UNTIL Expr
+		|			VAL LBRAC PARAMSTR LBRAC Expr RBRAC COMMA ID RBRAC
+		|			ID ASSIGN Expr
+		|			WRITELN WritelnPList
+		|			WRITELN
+		|			%empty
 
 WritelnPList:		LBRAC Expr CommaExpStrAux RBRAC
-		|	LBRAC STRING CommaExpStrAux RBRAC
+		|			LBRAC STRING CommaExpStrAux RBRAC
 
 CommaExpStrAux:		COMMA Expr CommaExpStrAux
-		|	COMMA STRING CommaExpStrAux
-		|	%empty
+		|			COMMA STRING CommaExpStrAux
+		|			%empty
 
-Expr:			Expr AND Expr
-		|	Expr OR Expr
-		| 	Expr '<' Expr
-		|	Expr '>' Expr
-		|	Expr '=' Expr
-		|	Expr DIF Expr
-		|	Expr LESSEQ Expr
-		|	Expr GREATEQ Expr
-		|	Expr '+' Expr
-		|	Expr '-' Expr
-		|	Expr '*' Expr
-		|	Expr '/' Expr
-		| 	Expr MOD Expr
-		|	Expr DIV Expr
-		|	'+' Expr
-		|	'-' Expr
-		|	NOT Expr
-		|	LBRAC Expr RBRAC
-		|	INTLIT
-		| 	REALLIT
-		|	ID ParamList
-		|	ID
+Expr:				Expr AND Expr
+		|			Expr OR Expr
+		|		 	Expr '<' Expr
+		|			Expr '>' Expr
+		|			Expr '=' Expr
+		|			Expr DIF Expr
+		|			Expr LESSEQ Expr
+		|			Expr GREATEQ Expr
+		|			Expr '+' Expr
+		|			Expr '-' Expr
+		|			Expr '*' Expr
+		|			Expr '/' Expr
+		|		 	Expr MOD Expr
+		|			Expr DIV Expr
+		|			'+' Expr
+		|			'-' Expr
+		|			NOT Expr
+		|			LBRAC Expr RBRAC
+		|			INTLIT
+		|		 	REALLIT
+		|			ID ParamList
+		|			ID
 
-ParamList:		LBRAC Expr CommaExprAux RBRAC
+ParamList:			LBRAC Expr CommaExprAux RBRAC
 
 CommaExprAux:		COMMA Expr CommaExprAux
-		|	%empty
+		|			%empty
 
 
 %%

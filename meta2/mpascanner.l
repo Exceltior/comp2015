@@ -28,7 +28,7 @@ string                                              '(''|[^'\n])*'
 {int}                                               {col+=yyleng; yylval.intlit = atoi(yytext); return INTLIT;}
 {reallit}   					                    {col+=yyleng; yylval.reallit = (char*)strdup(yytext); return REALLIT;}
 {string}                                            {yytext[strlen(yytext)-1] = '\0'; yytext = yytext + 1;
-                                                     yylval.string = (char*)strdup(yytext); col += yyleng; return STRING;}
+                                                        yylval.string = (char*)strdup(yytext); col += yyleng; return STRING;}
 '(''|[^'\n])*                                       {printf("Line %d, col %d: unterminated string\n", yylineno, col);}
 
 ":="                                                {col+=yyleng; return ASSIGN;}
@@ -56,14 +56,14 @@ string                                              '(''|[^'\n])*'
 "var"                                               {col+=yyleng; return VAR;}
 "while"                                             {col+=yyleng; return WHILE;}
 "writeln"                                           {col+=yyleng; return WRITELN;}
-"and"                 	                            {col+=yyleng; return AND}
-"or"						    {col+=yyleng; return OR}
-"<"|">"|"="|"+"|"-"|"*"|"/"           		    {col+=yyleng; return yytext[0];}
-"<>"						    {col+=yyleng; return DIF;}
-"<="						    {col+=yyleng; return LESSEQ;}
-">="					    	    {col+=yyleng; return GREATEQ;}
-"mod"						    {col+=yyleng; return MOD;}
-"div"                                 		    {col+=yyleng; return DIV;}
+"and"                 	                            {col+=yyleng; return AND;}
+"or"                                                {col+=yyleng; return OR;}
+"<"|">"|"="|"+"|"-"|"*"|"/"           		        {col+=yyleng; return yytext[0];}
+"<>"                                                {col+=yyleng; return DIF;}
+"<="                                                {col+=yyleng; return LESSEQ;}
+">="                                                {col+=yyleng; return GREATEQ;}
+"mod"                                               {col+=yyleng; return MOD;}
+"div"                                               {col+=yyleng; return DIV;}
 
 "abs"|"arctan"|"array"|"case"|"char"|"chr"|"const"|"cos"|"dispose"|"downto"|"eof"|"eoln"|"exp"|"file"|"for"|"get"|"goto"|"in"|"input"|"label"|"ln"|"maxint"|"new"|"nil"|"odd"|"of"|"ord"|"pack"|"packed"|"page"|"pred"|"procedure"|"put"|"read"|"readln"|"record"|"reset"|"rewrite"|"round"|"set"|"sqr"|"sin"|"sqrt"|"succ"|"text"|"to"|"trunc"|"type"|"unpack"|"with"|"write"          {col+=yyleng; return RESERVED;}
 
