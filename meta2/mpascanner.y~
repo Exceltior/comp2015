@@ -14,6 +14,13 @@
 	char* reallit, *string, *id;
 }
 
+%right ELSE THEN
+%right ASSIGN
+%left '=' '<' '>' DIF LESSEQ GREATEQ
+%left '+' '-' OR
+%left '*' '/' DIV MOD AND
+%left NOT
+
 %%
 
 Prog: 			ProgHeading SEMIC ProgBlock DOT
