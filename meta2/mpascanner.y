@@ -27,15 +27,28 @@ node* new_node(char* type, void* value) {
 node* create_node(char* type, int used, int n_children, ...) {
 	va_list args;
 	va_start(args, n_children);
-	register int i;
+	register int i = 0, j, c = 0;
 
 	node* parent = new_node(type, NULL);
 	parent->used = used;
 	parent->children = (node**)malloc(sizeof(node)*n_children);
 	parent->n_children = n_children;
 
-	for (i=0;i<n_children;i++) {
-		parent->children[i] = va_arg(args, node*);
+	node* cur;
+	for (c=0;c<n_children;c++) {
+		cur = va_arg(args, node*);
+		if (cur->used) {
+			parent->children[i] = cur;
+			i++;
+		}
+		else {
+			parent->children = (node**)realloc(parent->children, sizeof(node)*(parent->n_children-1+cur->n_children));
+			parent->n_children = (parent->n_children-1)+cur->n_children;
+			for (j=0;j<cur->n_children;j++) {
+				parent->children[i] = cur->children[j];
+				i++;
+			}
+		}
 	}
 	va_end(args);
 	return parent;
@@ -54,19 +67,18 @@ void print_node(node* n, int depth) {
 	for (i=0;i<depth*2;i++) {
 		ident[i] = '.';
 	}
-	/*if (n->used) {*/
-	if (1) {
-		printf("%s", ident);
-		//TODO Esta a dar segfault no n->type
-		if (!strcmp(n->type, "Id")) {
-			printf("%s (%s)\n", n->type, n->value);
-		}
-		else {
-			printf("%s\n", n->type);
-		}
-	}
-	else depth--;
 
+	printf("%s", ident);
+	if (!strcmp(n->type, "Id")) {
+		printf("%s(%s)\n", n->type, n->value);
+	}
+	else if (!strcmp(n->type, "IntLit")) {
+		printf("%s(%d)\n", n->type, (int*)n->value);
+	}
+	else {
+		printf("%s\n", n->type);
+	}
+	//printf(" -> %d\n", n->n_children);
 	for (i=0;i<n->n_children;i++) {
 		print_node(n->children[i], depth+1);
 	}
@@ -104,70 +116,70 @@ ProgHeading: 			PROGRAM IDAux LBRAC OUTPUT RBRAC						{$$=create_node("ProgHeadi
 ProgBlock: 				VarPart FuncPart StatPart								{$$=create_node("ProgBlock", 0, 3, $1, $2, $3);}
 
 VarPart: 				VAR VarDeclaration SEMIC VarPartAux						{$$=create_node("VarPart", 1, 2, $2, $4);}
-		|				%empty													{;}
+		|				%empty													{$$=create_terminal("Empty", 0, NULL);}
 
 VarPartAux: 			VarDeclaration SEMIC VarPartAux							{$$=create_node("VarPartAux", 0, 2, $1, $3);}
-		|				%empty													{;}
+		|				%empty													{$$=create_terminal("Empty", 0, NULL);}
 
 VarDeclaration: 		IDList COLON IDAux										{$$=create_node("VarDecl", 1, 2, $1, $3);}
 
 IDList: 				IDAux IDListAux											{$$=create_node("IDList", 0, 2, $1, $2);}
 
 IDListAux:				COMMA IDAux IDListAux									{$$=create_node("IDListAux", 0, 2, $2, $3);}
-		|				%empty													{;}
+		|				%empty													{$$=create_terminal("Empty", 0, NULL);}
 
 FuncPart:  				FuncDeclaration SEMIC FuncPart							{$$=create_node("FuncPart", 1, 2, $1, $3);}
-		|				%empty													{;}
+		|				%empty													{$$=create_terminal("FuncPart", 1, NULL);}
 
 FuncDeclaration: 		FuncHeading SEMIC FORWARD								{$$=create_node("FuncDecl", 1, 1, $1);}
 		|				FuncIdent SEMIC FuncBlock								{$$=create_node("FuncDecl2", 1, 2, $1, $3);}
 		|				FuncHeading SEMIC FuncBlock								{$$=create_node("FuncDecl2", 1, 2, $1, $3);}
 
-FuncHeading: 			FUNCTION ID FuncHeadingAux COLON ID						{$$=create_node("FuncHeading", 0, 3, $2, $3, $5);}
+FuncHeading: 			FUNCTION IDAux FuncHeadingAux COLON IDAux				{$$=create_node("FuncHeading", 0, 3, $2, $3, $5);}
 
 FuncHeadingAux:			FormalParamList											{$$=create_node("FuncHeadingAux", 0, 1, $1);}
-		|				%empty													{;}
+		|				%empty													{$$=create_terminal("Empty", 0, NULL);}
 
 FuncIdent:				FUNCTION IDAux											{$$=create_node("FuncIdent", 0, 1, $2);}
 
 FormalParamList: 		LBRAC FormalParams FormalParamListAux RBRAC 			{$$=create_node("FormalParamList", 0, 2, $2, $3);}
 
 FormalParamListAux: 	SEMIC FormalParams FormalParamListAux					{$$=create_node("FormalParamListAux", 0, 2, $2, $3);}
-		|				%empty													{;}
+		|				%empty													{$$=create_terminal("Empty", 0, NULL);}
 
 FormalParams:			FormalParamsAux IDList COLON IDAux						{$$=create_node("FormalParams", 0, 3, $1, $2, $4);}
 
 FormalParamsAux:		VAR														{$$=create_terminal("FormalParamsAux", 0, $1);}
-		|				%empty													{;}
+		|				%empty													{$$=create_terminal("Empty", 0, NULL);}
 
 FuncBlock: 				VarPart StatPart										{$$=create_node("FuncBlock", 0, 2, $1, $2);}
 
 StatPart: 				CompStat												{$$=create_node("StatPart", 0, 1, $1);}
 
-CompStat:				YBEGIN StatList END										{$$=create_node("CompStat", 0, 1, $1);}
+CompStat:				YBEGIN StatList END										{$$=create_node("CompStat", 0, 1, $2);}
 
 StatList: 				Stat SemicStatAux										{$$=create_node("StatList", 1, 2, $1, $2);}
 
 SemicStatAux:			SEMIC Stat SemicStatAux									{$$=create_node("SemicStatAux", 0, 2, $2, $3);}
-		|				%empty													{;}
+		|				%empty													{$$=create_terminal("Empty", 0, NULL);}
 
 Stat: 					CompStat												{$$=create_node("Stat", 0, 1, $1);}
 		|				IF Expr THEN Stat ELSE Stat								{$$=create_node("IfElse", 1, 3, $2, $4, $6);}
 		|				IF Expr THEN Stat										{$$=create_node("IfElse", 1, 2, $2, $4);}
 		|				WHILE Expr DO Stat										{$$=create_node("While", 1, 2, $2, $4);}
 		|				REPEAT StatList UNTIL Expr								{$$=create_node("Repeat", 1, 2, $2, $4);}
-		|				VAL LBRAC PARAMSTR LBRAC Expr RBRAC COMMA IDAux RBRAC 	{$$=create_node("ValParam", 0, 2, $5, $8);}
+		|				VAL LBRAC PARAMSTR LBRAC Expr RBRAC COMMA IDAux RBRAC 	{$$=create_node("ValParam", 1, 2, $5, $8);}
 		|				IDAux ASSIGN Expr										{$$=create_node("Assign", 1, 2, $1, $3);}
 		|				WRITELN WritelnPList									{$$=create_node("WriteLn", 1, 1, $2);}
 		|				WRITELN													{$$=create_terminal("WriteLn", 1, $1);}
-		|				%empty													{;}
+		|				%empty													{$$=create_terminal("Empty", 0, NULL);}
 
 WritelnPList:			LBRAC Expr CommaExpStrAux RBRAC							{$$=create_node("WritelnPList", 0, 2, $2, $3);}
 		|				LBRAC STRINGAux CommaExpStrAux RBRAC					{$$=create_node("WritelnPList", 0, 2, $2, $3);}
 
 CommaExpStrAux:			COMMA Expr CommaExpStrAux								{$$=create_node("CommaExpStrAux", 0, 2, $2, $3);}
 		|				COMMA STRINGAux CommaExpStrAux							{$$=create_node("CommaExpStrAux", 0, 2, $2, $3);}
-		|				%empty													{;}
+		|				%empty													{$$=create_terminal("Empty", 0, NULL);}
 
 Expr:					Expr AND Expr											{$$=create_node("And", 1, 2, $1, $3);}
 		|				Expr OR Expr											{$$=create_node("Or", 1, 2, $1, $3);}
@@ -182,12 +194,12 @@ Expr:					Expr AND Expr											{$$=create_node("And", 1, 2, $1, $3);}
 		|				Expr '*' Expr											{$$=create_node("Mul", 1, 2, $1, $3);}
 		|		 		Expr MOD Expr											{$$=create_node("Mod", 1, 2, $1, $3);}
 		|				Expr '/' Expr											{$$=create_node("Div", 1, 2, $1, $3);}
-		|				Expr DIV Expr											{$$=create_node("RealDiv", 1, 2, $1, $3);}
+		|				Expr DIV												{$$=create_node("RealDiv", 1, 1, $1);}
 		|				'+' Expr												{$$=create_node("Plus", 1, 1, $2);}
 		|				'-' Expr												{$$=create_node("Minus", 1, 1, $2);}
 		|				NOT Expr												{$$=create_node("Not", 1, 1, $2);}
-		|				LBRAC Expr RBRAC										{$$=$2;}
-		|				INTLIT													{int aux = $1; $$=create_terminal("IntLit", 1, &aux); /*TODO CONFIRMAR SE ISTO FUNCIONA (void ptr)*/}
+		|				LBRAC Expr RBRAC										{$$=create_node("LbracRbrac", 1, 1, $2);}
+		|				INTLIT													{$$=create_terminal("IntLit", 1, (void*)$1);}
 		|			 	REALLIT													{$$=create_terminal("RealLit", 1, $1);}
 		|				IDAux ParamList											{$$=create_node("Call", 1, 2, $1, $2);}
 		|				IDAux													{;}
@@ -195,7 +207,7 @@ Expr:					Expr AND Expr											{$$=create_node("And", 1, 2, $1, $3);}
 ParamList:				LBRAC Expr CommaExprAux RBRAC							{$$=create_node("ParamList", 0, 2, $2, $3);}
 
 CommaExprAux:			COMMA Expr CommaExprAux									{$$=create_node("CommaExprAux", 0, 2, $2, $3);}
-		|				%empty													{;}
+		|				%empty													{$$=create_terminal("Empty", 0, NULL);}
 
 IDAux:					ID														{$$=create_terminal("Id", 1, $1);}
 
