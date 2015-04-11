@@ -58,7 +58,7 @@ string                                              '(''|[^'\n])*'
 "writeln"                                           {col+=yyleng; return WRITELN;}
 "and"                 	                            {col+=yyleng; return AND;}
 "or"                                                {col+=yyleng; return OR;}
-"<"|">"|"="|"+"|"-"|"*"|"/"           		        {col+=yyleng; return yytext[0];}
+"<"|">"|"="|"+"|"-"|"*"|"/"           		    {col+=yyleng; return yytext[0];}
 "<>"                                                {col+=yyleng; return DIF;}
 "<="                                                {col+=yyleng; return LESSEQ;}
 ">="                                                {col+=yyleng; return GREATEQ;}
@@ -71,6 +71,8 @@ string                                              '(''|[^'\n])*'
 
 \n                                                  {col = 1;}
 {whitespace}                                        {col += yyleng;}
+
+<<EOF>>						    {col += yyleng; return 0;}
 
 .                                                   {printf("Line %d, col %d: illegal character ('%c')\n", yylineno, col, yytext[0]); col += yyleng;}
 

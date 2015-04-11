@@ -15,6 +15,7 @@ typedef struct node {
 
 node* parsing_tree;
 
+int error_flag;
 extern int yyleng, yylineno, col;
 extern char* yytext;
 
@@ -218,14 +219,14 @@ STRINGAux:				STRING													{$$=create_terminal("String", 1, $1);}
 
 %%
 int yyerror() {
-	printf("DEBUG: line: %d col: %d, yyleng: %d\n", yylineno, col, yyleng);
+	error_flag = 1;
 	printf("Line %d, col %d: syntax error: %s\n", yylineno, col - yyleng, yytext);
 }
 
 int main(int argc, char** argv) {
 	yyparse();
 	if (argc > 1) {
-		if (!strcmp(argv[1], OP_PARSING_TREE)) {
+		if (!strcmp(argv[1], OP_PARSING_TREE) && !error_flag) {
 			print_node(parsing_tree, 0);
 		}
 	}

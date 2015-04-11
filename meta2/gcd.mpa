@@ -1,6 +1,5 @@
 program gcd(output);
-var a, b: integer;
-begin
+var a, b: integer; 
  val(paramstr(1), a);
  val(paramstr(2), b);
  if a = 0 then
