@@ -1,3 +1,0 @@
-lex mpaparser.l
-yacc -d mpaparser.y
-gcc -o mpaparser y.tab.c lex.yy.c -ll -ly

@@ -74,10 +74,10 @@ void print_node(node* n, int depth) {
 
 	printf("%s", ident);
 	if (!strcmp(n->type, "Id")) {
-		/*printf("%s(%s)\n", n->type, n->value); -> warning*/
+		printf("%s(%s)\n", n->type, (char*)n->value);
 	}
 	else if (!strcmp(n->type, "IntLit")) {
-		/*printf("%s(%d)\n", n->type, (int*)n->value); -> warning*/
+		printf("%s(%d)\n", n->type, *((int*)n->value));
 	}
 	else {
 		printf("%s\n", n->type);
@@ -203,7 +203,7 @@ Expr:					Expr AND Expr											{$$=create_node("And", 1, 2, $1, $3);}
 		|				'-' Expr												{$$=create_node("Minus", 1, 1, $2);}
 		|				NOT Expr												{$$=create_node("Not", 1, 1, $2);}
 		|				LBRAC Expr RBRAC										{$$=create_node("LbracRbrac", 1, 1, $2);}
-		|				INTLIT													{$$=create_terminal("IntLit", 1, (void*)$1);}
+		|				INTLIT													{int *aux = (int*)malloc(sizeof(int)); *aux = $1; $$=create_terminal("IntLit", 1, aux);}
 		|			 	REALLIT													{$$=create_terminal("RealLit", 1, $1);}
 		|				IDAux ParamList											{$$=create_node("Call", 1, 2, $1, $2);}
 		|				IDAux													{;}
