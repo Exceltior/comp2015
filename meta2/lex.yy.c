@@ -1036,215 +1036,214 @@ YY_RULE_SETUP
 case 7:
 YY_RULE_SETUP
 #line 30 "mpaparser.l"
-{yytext[strlen(yytext)-1] = '\0'; yytext = yytext + 1;
-                                                        yylval.string = (char*)strdup(yytext); col += yyleng; return STRING;}
+{yylval.string = (char*)strdup(yytext); col += yyleng; return STRING;}
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 32 "mpaparser.l"
+#line 31 "mpaparser.l"
 {printf("Line %d, col %d: unterminated string\n", yylineno, col);}
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 34 "mpaparser.l"
+#line 33 "mpaparser.l"
 {col+=yyleng; return ASSIGN;}
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 35 "mpaparser.l"
+#line 34 "mpaparser.l"
 {col+=yyleng; return YBEGIN;}
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 36 "mpaparser.l"
+#line 35 "mpaparser.l"
 {col+=yyleng; return COLON;}
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 37 "mpaparser.l"
+#line 36 "mpaparser.l"
 {col+=yyleng; return COMMA;}
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 38 "mpaparser.l"
+#line 37 "mpaparser.l"
 {col+=yyleng; return DO;}
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 39 "mpaparser.l"
+#line 38 "mpaparser.l"
 {col+=yyleng; return DOT;}
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 40 "mpaparser.l"
+#line 39 "mpaparser.l"
 {col+=yyleng; return ELSE;}
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 41 "mpaparser.l"
+#line 40 "mpaparser.l"
 {col+=yyleng; return END;}
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 42 "mpaparser.l"
+#line 41 "mpaparser.l"
 {col+=yyleng; return FORWARD;}
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 43 "mpaparser.l"
+#line 42 "mpaparser.l"
 {col+=yyleng; return FUNCTION;}
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 44 "mpaparser.l"
+#line 43 "mpaparser.l"
 {col+=yyleng; return IF;}
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 45 "mpaparser.l"
+#line 44 "mpaparser.l"
 {col+=yyleng; return LBRAC;}
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 46 "mpaparser.l"
+#line 45 "mpaparser.l"
 {col+=yyleng; return NOT;}
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 47 "mpaparser.l"
+#line 46 "mpaparser.l"
 {col+=yyleng; return OUTPUT;}
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 48 "mpaparser.l"
+#line 47 "mpaparser.l"
 {col+=yyleng; return PARAMSTR;}
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 49 "mpaparser.l"
+#line 48 "mpaparser.l"
 {col+=yyleng; return PROGRAM;}
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 50 "mpaparser.l"
+#line 49 "mpaparser.l"
 {col+=yyleng; return RBRAC;}
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 51 "mpaparser.l"
+#line 50 "mpaparser.l"
 {col+=yyleng; return REPEAT;}
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 52 "mpaparser.l"
+#line 51 "mpaparser.l"
 {col+=yyleng; return SEMIC;}
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 53 "mpaparser.l"
+#line 52 "mpaparser.l"
 {col+=yyleng; return THEN;}
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 54 "mpaparser.l"
+#line 53 "mpaparser.l"
 {col+=yyleng; return UNTIL;}
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 55 "mpaparser.l"
+#line 54 "mpaparser.l"
 {col+=yyleng; return VAL;}
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 56 "mpaparser.l"
+#line 55 "mpaparser.l"
 {col+=yyleng; return VAR;}
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 57 "mpaparser.l"
+#line 56 "mpaparser.l"
 {col+=yyleng; return WHILE;}
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 58 "mpaparser.l"
+#line 57 "mpaparser.l"
 {col+=yyleng; return WRITELN;}
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 59 "mpaparser.l"
+#line 58 "mpaparser.l"
 {col+=yyleng; return AND;}
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 60 "mpaparser.l"
+#line 59 "mpaparser.l"
 {col+=yyleng; return OR;}
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 61 "mpaparser.l"
+#line 60 "mpaparser.l"
 {col+=yyleng; return yytext[0];}
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 62 "mpaparser.l"
+#line 61 "mpaparser.l"
 {col+=yyleng; return DIF;}
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 63 "mpaparser.l"
+#line 62 "mpaparser.l"
 {col+=yyleng; return LESSEQ;}
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 64 "mpaparser.l"
+#line 63 "mpaparser.l"
 {col+=yyleng; return GREATEQ;}
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 65 "mpaparser.l"
+#line 64 "mpaparser.l"
 {col+=yyleng; return MOD;}
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 66 "mpaparser.l"
+#line 65 "mpaparser.l"
 {col+=yyleng; return DIV;}
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 68 "mpaparser.l"
+#line 67 "mpaparser.l"
 {col+=yyleng; return RESERVED;}
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 70 "mpaparser.l"
+#line 69 "mpaparser.l"
 {col+=yyleng; yylval.id = (char*)strdup(yytext); return ID;}
 	YY_BREAK
 case 44:
 /* rule 44 can match eol */
 YY_RULE_SETUP
-#line 72 "mpaparser.l"
+#line 71 "mpaparser.l"
 {col = 1;}
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
-#line 73 "mpaparser.l"
+#line 72 "mpaparser.l"
 {col += yyleng;}
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
-#line 75 "mpaparser.l"
+#line 74 "mpaparser.l"
 {col += yyleng; return 0;}
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
-#line 77 "mpaparser.l"
+#line 76 "mpaparser.l"
 {printf("Line %d, col %d: illegal character ('%c')\n", yylineno, col, yytext[0]); col += yyleng;}
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
-#line 79 "mpaparser.l"
+#line 78 "mpaparser.l"
 ECHO;
 	YY_BREAK
-#line 1248 "lex.yy.c"
+#line 1247 "lex.yy.c"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -2249,7 +2248,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 78 "mpaparser.l"
+#line 77 "mpaparser.l"
 
 
 

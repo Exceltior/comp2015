@@ -27,8 +27,7 @@ string                                              '(''|[^'\n])*'
 
 {int}                                               {col+=yyleng; yylval.intlit = atoi(yytext); return INTLIT;}
 {reallit}   					                    {col+=yyleng; yylval.reallit = (char*)strdup(yytext); return REALLIT;}
-{string}                                            {yytext[strlen(yytext)-1] = '\0'; yytext = yytext + 1;
-                                                        yylval.string = (char*)strdup(yytext); col += yyleng; return STRING;}
+{string}                                            {yylval.string = (char*)strdup(yytext); col += yyleng; return STRING;}
 '(''|[^'\n])*                                       {printf("Line %d, col %d: unterminated string\n", yylineno, col);}
 
 ":="                                                {col+=yyleng; return ASSIGN;}
