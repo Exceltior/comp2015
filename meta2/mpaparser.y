@@ -104,10 +104,10 @@ void print_node(node* n, int depth) {
 
 %right ELSE THEN
 %right ASSIGN
-%left '=' '<' '>' DIF LESSEQ GREATEQ
+/*%left '=' '<' '>' DIF LESSEQ GREATEQ
 %left '+' '-' OR
 %left '*' '/' DIV MOD AND
-%left NOT
+%left NOT*/
 
 %type <node> Prog ProgHeading ProgBlock VarPart VarPartAux VarDeclaration IDList IDListAux FuncPart FuncDeclaration FuncHeading FuncHeadingAux FuncIdent FormalParamList FormalParamListAux FormalParams FormalParamsAux FuncBlock StatPart CompStat StatList SemicStatAux Stat WritelnPList CommaExpStrAux Expr ParamList CommaExprAux IDAux STRINGAux
 
@@ -185,7 +185,7 @@ CommaExpStrAux:			COMMA Expr CommaExpStrAux								{$$=create_node("CommaExpStrA
 		|				COMMA STRINGAux CommaExpStrAux							{$$=create_node("CommaExpStrAux", 0, 2, $2, $3);}
 		|				%empty													{$$=create_terminal("Empty", 0, NULL);}
 
-Expr:					Expr AND Expr											{$$=create_node("And", 1, 2, $1, $3);}
+/*Expr:					Expr AND Expr											{$$=create_node("And", 1, 2, $1, $3);}
 		|				Expr OR Expr											{$$=create_node("Or", 1, 2, $1, $3);}
 		|		 		Expr '<' Expr											{$$=create_node("Lt", 1, 2, $1, $3);}
 		|				Expr '>' Expr											{$$=create_node("Gt", 1, 2, $1, $3);}
@@ -207,6 +207,50 @@ Expr:					Expr AND Expr											{$$=create_node("And", 1, 2, $1, $3);}
 		|			 	REALLIT													{$$=create_terminal("RealLit", 1, $1);}
 		|				IDAux ParamList											{$$=create_node("Call", 1, 2, $1, $2);}
 		|				IDAux													{;}
+*/
+
+Expr:					SimpleExpr ExprAux										{;}
+
+ExprAux:				RelationalOP SimpleExpr									{;}
+		|				%empty													{;}
+
+RelationalOP:			'='														{;}
+		|				DIF														{;}
+		|				'<'														{;}
+		|				'>'														{;}
+		|				LESSEQ													{;}
+		|				GREATEQ													{;}
+
+SimpleExpr:				Sign Term AddOPTermAux									{;}
+
+Sign:					'+'														{;}
+		|				'-'														{;}
+		|				%empty													{;}
+
+AddOPTermAux:			AddOP Term AddOPTermAux									{;}
+		|				%empty													{;}
+
+AddOP:					'+'														{;}
+		|				'-'														{;}
+		|				OR														{;}
+
+Term:					Factor MultOPFactorAux									{;}
+
+MultOPFactorAux:		MultOP Factor MultOPFactorAux							{;}
+		|				%empty													{;}
+
+MultOP:					'/'														{;}
+		|				'*'														{;}	
+		|				AND														{;}
+		|				DIV														{;}
+		|				MOD														{;}
+
+Factor:					IDAux													{;}
+		|				NOT Factor												{;}
+		|				LBRAC Expr RBRAC										{;}
+		|				IDAux ParamList											{;}
+		|				INTLIT													{;}	
+		|				REALLIT													{;}
 
 ParamList:				LBRAC Expr CommaExprAux RBRAC							{$$=create_node("ParamList", 0, 2, $2, $3);}
 
