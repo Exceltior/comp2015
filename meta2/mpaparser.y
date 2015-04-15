@@ -109,7 +109,7 @@ void print_node(node* n, int depth) {
 %left '*' '/' DIV MOD AND
 %left NOT*/
 
-%type <node> Prog ProgHeading ProgBlock VarPart VarPartAux VarDeclaration IDList IDListAux FuncPart FuncDeclaration FuncHeading FuncHeadingAux FuncIdent FormalParamList FormalParamListAux FormalParams FormalParamsAux FuncBlock StatPart CompStat StatList SemicStatAux Stat WritelnPList CommaExpStrAux Expr ParamList CommaExprAux IDAux STRINGAux
+%type <node> Prog ProgHeading ProgBlock VarPart VarPartAux VarDeclaration IDList IDListAux FuncPart FuncDeclaration FuncHeading FuncHeadingAux FuncIdent FormalParamList FormalParamListAux FormalParams FormalParamsAux FuncBlock StatPart CompStat StatList SemicStatAux Stat WritelnPList CommaExpStrAux Expr ParamList CommaExprAux IDAux STRINGAux  ExprAux RelationalOP SimpleExpr Sign AddOPTermAux AddOP Term MultOPFactorAux MultOP Factor
 
 %%
 
@@ -209,48 +209,48 @@ CommaExpStrAux:			COMMA Expr CommaExpStrAux								{$$=create_node("CommaExpStrA
 		|				IDAux													{;}
 */
 
-Expr:					SimpleExpr ExprAux										{;}
+Expr:					SimpleExpr ExprAux										{$$=create_node("Expr", 0, 2, $1, $2);}
 
-ExprAux:				RelationalOP SimpleExpr									{;}
-		|				%empty													{;}
+ExprAux:				RelationalOP SimpleExpr									{$$=create_node("ExprAux", 0, 2, $1, $2);}
+		|				%empty													{$$=create_terminal("Empty", 0, NULL);}
 
-RelationalOP:			'='														{;}
-		|				DIF														{;}
-		|				'<'														{;}
-		|				'>'														{;}
-		|				LESSEQ													{;}
-		|				GREATEQ													{;}
+RelationalOP:			'='														{$$=create_terminal("Eq", 1, "Eq");}
+		|				DIF														{$$=create_terminal("Neq", 1, "Neq");}
+		|				'<'														{$$=create_terminal("Lt", 1, "Lt");}
+		|				'>'														{$$=create_terminal("Gt", 1, "Gt");}
+		|				LESSEQ													{$$=create_terminal("Leq", 1, "Leq");}
+		|				GREATEQ													{$$=create_terminal("Geq", 1, "Geq");}
 
-SimpleExpr:				Sign Term AddOPTermAux									{;}
+SimpleExpr:				Sign Term AddOPTermAux									{$$=create_node("SimpleExpr", 0, 3, $1, $2, $3);}
 
-Sign:					'+'														{;}
-		|				'-'														{;}
-		|				%empty													{;}
+Sign:					'+'														{$$=create_terminal("Plus", 1, "Plus");}
+		|				'-'														{$$=create_terminal("Minus", 1, "Minus");}
+		|				%empty													{$$=create_terminal("Empty", 0, NULL);}
 
-AddOPTermAux:			AddOP Term AddOPTermAux									{;}
-		|				%empty													{;}
+AddOPTermAux:			AddOP Term AddOPTermAux									{$$=create_node("AddOPTermAux", 0, 3, $1, $2, $3);}
+		|				%empty													{$$=create_terminal("Empty", 0, NULL);}
 
-AddOP:					'+'														{;}
-		|				'-'														{;}
-		|				OR														{;}
+AddOP:					'+'														{$$=create_terminal("Add", 1, "Add");}
+		|				'-'														{$$=create_terminal("Sub", 1, "Sub");}
+		|				OR														{$$=create_terminal("Or", 1, "Or");}
 
-Term:					Factor MultOPFactorAux									{;}
+Term:					Factor MultOPFactorAux									{$$=create_node("Term", 0, 2, $1, $2);}
 
-MultOPFactorAux:		MultOP Factor MultOPFactorAux							{;}
-		|				%empty													{;}
+MultOPFactorAux:		MultOP Factor MultOPFactorAux							{$$=create_node("MultOPFactorAux", 0, 3, $1, $2, $3);}
+		|				%empty													{$$=create_terminal("Empty", 0, NULL);}
 
-MultOP:					'/'														{;}
-		|				'*'														{;}	
-		|				AND														{;}
-		|				DIV														{;}
-		|				MOD														{;}
+MultOP:					'/'														{$$=create_terminal("Div", 1, "Div");}
+		|				'*'														{$$=create_terminal("Mul", 1, "Mul");}
+		|				AND														{$$=create_terminal("And", 1, "And");}
+		|				DIV														{$$=create_terminal("RealDiv", 1, "RealDiv");}
+		|				MOD														{$$=create_terminal("Mod", 1, "Mod");}
 
 Factor:					IDAux													{;}
-		|				NOT Factor												{;}
-		|				LBRAC Expr RBRAC										{;}
-		|				IDAux ParamList											{;}
-		|				INTLIT													{;}	
-		|				REALLIT													{;}
+		|				NOT Factor												{$$=create_node("Not", 1, 1, $2);}
+		|				LBRAC Expr RBRAC										{$$=create_node("LbracRbrac", 1, 1, $2);}
+		|				IDAux ParamList											{$$=create_node("Call", 1, 2, $1, $2);}
+		|				INTLIT													{int *aux = (int*)malloc(sizeof(int)); *aux = $1; $$=create_terminal("IntLit", 1, aux);}
+		|				REALLIT													{$$=create_terminal("RealLit", 1, $1);}
 
 ParamList:				LBRAC Expr CommaExprAux RBRAC							{$$=create_node("ParamList", 0, 2, $2, $3);}
 
