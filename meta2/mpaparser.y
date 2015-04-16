@@ -113,7 +113,7 @@ void print_node(node* n, int depth) {
 %right ELSE THEN
 %right ASSIGN
 
-%type <node> Prog ProgHeading ProgBlock VarPart VarPartAux VarDeclaration IDList IDListAux FuncPart FuncDeclaration FuncHeading FuncHeadingAux FuncIdent FormalParamList FormalParamListAux FormalParams FormalParamsAux FuncBlock StatPart CompStat StatList SemicStatAux Stat WritelnPList CommaExpStrAux Expr ParamList CommaExprAux IDAux STRINGAux SimpleExpr AddOP Term Factor
+%type <node> Prog ProgHeading ProgBlock VarPart VarPartAux VarDeclaration IDList IDListAux FuncPart FuncDeclaration FuncHeading FuncHeadingAux FuncIdent FormalParamList FormalParamListAux FormalParams FuncBlock StatPart CompStat StatList SemicStatAux Stat WritelnPList CommaExpStrAux Expr ParamList CommaExprAux IDAux STRINGAux SimpleExpr AddOP Term Factor VarParams Params
 
 %%
 
@@ -140,8 +140,8 @@ FuncPart:  				FuncDeclaration SEMIC FuncPart							{$$=create_node("FuncPart", 
 		|				%empty													{$$=create_terminal("FuncPart", 1, NULL);}
 
 FuncDeclaration: 		FuncHeading SEMIC FORWARD								{$$=create_node("FuncDecl", 1, 1, $1);}
-		|				FuncIdent SEMIC FuncBlock								{$$=create_node("FuncDecl", 1, 2, $1, $3);}
-		|				FuncHeading SEMIC FuncBlock								{$$=create_node("FuncDecl", 1, 2, $1, $3);}
+		|				FuncIdent SEMIC FuncBlock								{$$=create_node("FuncDef2", 1, 2, $1, $3);}
+		|				FuncHeading SEMIC FuncBlock								{$$=create_node("FuncDef", 1, 2, $1, $3);}
 
 FuncHeading: 			FUNCTION IDAux FuncHeadingAux COLON IDAux				{$$=create_node("FuncHeading", 0, 3, $2, $3, $5);}
 
@@ -155,10 +155,16 @@ FormalParamList: 		LBRAC FormalParams FormalParamListAux RBRAC 			{$$=create_nod
 FormalParamListAux: 	SEMIC FormalParams FormalParamListAux					{$$=create_node("FormalParamListAux", 0, 2, $2, $3);}
 		|				%empty													{$$=create_terminal("Empty", 0, NULL);}
 
-FormalParams:			FormalParamsAux IDList COLON IDAux						{$$=create_node("VarParams", 1, 3, $1, $2, $4);}
+/*FormalParams:			FormalParamsAux IDList COLON IDAux						{$$=create_node("VarParams", 1, 3, $1, $2, $4);}*/
+FormalParams:           VarParams                                               {$$ = create_node("FormalParams", 0, 1, $1);}
+        |               Params                                                  {$$ = create_node("FormalParams", 0, 1, $1);}
 
-FormalParamsAux:		VAR														{$$=create_terminal("FormalParamsAux", 0, $1);}
-		|				%empty													{$$=create_terminal("Empty", 0, NULL);}
+VarParams:              VAR IDList COLON IDAux                                  {$$=create_node("VarParams", 1, 2, $2, $4);}
+
+Params:                 IDList COLON IDAux                                      {$$=create_node("Params", 1, 2, $1, $3);}
+
+/*FormalParamsAux:		VAR														{$$=create_terminal("FormalParamsAux", 0, $1);}
+		|				%empty													{$$=create_terminal("Empty", 0, NULL);}*/
 
 FuncBlock: 				VarPart StatPart										{$$=create_node("FuncBlock", 0, 2, $1, $2);}
 
