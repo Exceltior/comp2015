@@ -19,8 +19,6 @@ int error_flag;
 extern int yyleng, yylineno, col;
 extern char* yytext;
 
-int stat_counter = 0;
-
 node* new_node(char* type, void* value) {
 	node* n = (node*)malloc(sizeof(node));
 	n->type = strdup(type);
@@ -56,6 +54,13 @@ node* create_node(char* type, int used, int n_children, ...) {
 			}
 		}
 	}
+
+	if (!strcmp(type, "StatList")) {
+		if (i == 1) {
+			parent->used = 0;
+		}
+	}
+
 	va_end(args);
 	return parent;
 }
@@ -111,7 +116,7 @@ void print_node(node* n, int depth) {
 }
 
 %right ELSE THEN
-%right ASSIGN
+%right ASSIGN.
 
 %type <node> Prog ProgHeading ProgBlock VarPart VarPartAux VarDeclaration IDList IDListAux FuncPart FuncDeclaration FuncHeading FuncHeadingAux FuncIdent FormalParamList FormalParamListAux FormalParams FuncBlock StatPart CompStat StatList SemicStatAux Stat WritelnPList CommaExpStrAux Expr ParamList CommaExprAux IDAux STRINGAux SimpleExpr AddOP Term Factor VarParams Params
 
@@ -172,20 +177,20 @@ StatPart: 				CompStat												{$$=create_node("StatPart", 0, 1, $1);}
 
 CompStat:				YBEGIN StatList END										{$$=create_node("CompStat", 0, 1, $2);}
 
-StatList: 				Stat SemicStatAux										{if (stat_counter != 1) $$=create_node("StatList", 1, 2, $1, $2); stat_counter = 0;}
+StatList: 				Stat SemicStatAux										{$$=create_node("StatList", 1, 2, $1, $2);}
 
 SemicStatAux:			SEMIC Stat SemicStatAux									{$$=create_node("SemicStatAux", 0, 2, $2, $3);}
 		|				%empty													{$$=create_terminal("Empty", 0, NULL);}
 
-Stat: 					CompStat												{stat_counter++; $$=create_node("Stat", 0, 1, $1);}
-		|				IF Expr THEN Stat ELSE Stat								{stat_counter++; $$=create_node("IfElse", 1, 3, $2, $4, $6);}
-		|				IF Expr THEN Stat										{stat_counter++; $$=create_node("IfElse", 1, 2, $2, $4);}
-		|				WHILE Expr DO Stat										{stat_counter++; $$=create_node("While", 1, 2, $2, $4);}
-		|				REPEAT StatList UNTIL Expr								{stat_counter++; $$=create_node("Repeat", 1, 2, $2, $4);}
-		|				VAL LBRAC PARAMSTR LBRAC Expr RBRAC COMMA IDAux RBRAC 	{stat_counter++; $$=create_node("ValParam", 1, 2, $5, $8);}
-		|				IDAux ASSIGN Expr										{stat_counter++; $$=create_node("Assign", 1, 2, $1, $3);}
-		|				WRITELN WritelnPList									{stat_counter++; $$=create_node("WriteLn", 1, 1, $2);}
-		|				WRITELN													{stat_counter++; $$=create_terminal("WriteLn", 1, $1);}
+Stat: 					CompStat												{$$=create_node("Stat", 0, 1, $1);}
+		|				IF Expr THEN Stat ELSE Stat								{$$=create_node("IfElse", 1, 3, $2, $4, $6);}
+		|				IF Expr THEN Stat										{$$=create_node("IfElse", 1, 3, $2, $4, create_terminal("StatList", 1, NULL));}
+		|				WHILE Expr DO Stat										{$$=create_node("While", 1, 2, $2, $4);}
+		|				REPEAT StatList UNTIL Expr								{$$=create_node("Repeat", 1, 2, $2, $4);}
+		|				VAL LBRAC PARAMSTR LBRAC Expr RBRAC COMMA IDAux RBRAC 	{$$=create_node("ValParam", 1, 2, $5, $8);}
+		|				IDAux ASSIGN Expr										{$$=create_node("Assign", 1, 2, $1, $3);}
+		|				WRITELN WritelnPList									{$$=create_node("WriteLn", 1, 1, $2);}
+		|				WRITELN													{$$=create_terminal("WriteLn", 1, $1);}
 		|				%empty													{$$=create_terminal("Empty", 0, NULL);}
 
 WritelnPList:			LBRAC Expr CommaExpStrAux RBRAC							{$$=create_node("WritelnPList", 0, 2, $2, $3);}
