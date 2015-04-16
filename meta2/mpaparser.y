@@ -217,10 +217,10 @@ AddOP:					SimpleExpr '+' Term										{$$=create_node("Add", 1, 2, $1, $3);}
 		|				'-' Term												{$$=create_node("Minus", 1, 1, $2);}
 		|				'+' Term												{$$=create_node("Plus", 1, 1, $2);}
 
-Term:					Term '/' Factor											{$$=create_node("Div", 1, 2, $1, $3);}
+Term:					Term '/' Factor											{$$=create_node("RealDiv", 1, 2, $1, $3);}
 		|				Term '*' Factor											{$$=create_node("Mul", 1, 2, $1, $3);}
 		|				Term AND Factor											{$$=create_node("And", 1, 2, $1, $3);}
-		|				Term DIV Factor											{$$=create_node("RealDiv", 1, 2, $1, $3);}
+		|				Term DIV Factor											{$$=create_node("Div", 1, 2, $1, $3);}
 		|				Term MOD Factor											{$$=create_node("Mod", 1, 2, $1, $3);}
 		|				Factor													{$$=create_node("Factor", 0, 1, $1);}
 
