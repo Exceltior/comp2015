@@ -7,11 +7,9 @@ begin
  writeln(b)
  else
  begin
- while b > 0 do
+ while b > 0.0 do
  if a > b then
- a := a - b
- else
- b := b - a;
- writeln(a)
+ a := a - b;
+ writeln('str ext')
  end
 end.
