@@ -7,5 +7,11 @@ begin
  writeln(b)
  else
  begin
+ while b > 0 do
+ if a > b then
+ a := a - b
+ else
+ b := b - a;
+ writeln(a)
  end
 end.

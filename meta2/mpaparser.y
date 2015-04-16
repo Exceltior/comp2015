@@ -105,7 +105,7 @@ void print_node(node* n, int depth) {
 %right ELSE THEN
 %right ASSIGN
 
-%type <node> Prog ProgHeading ProgBlock VarPart VarPartAux VarDeclaration IDList IDListAux FuncPart FuncDeclaration FuncHeading FuncHeadingAux FuncIdent FormalParamList FormalParamListAux FormalParams FormalParamsAux FuncBlock StatPart CompStat StatList SemicStatAux Stat WritelnPList CommaExpStrAux Expr ParamList CommaExprAux IDAux STRINGAux  ExprAux RelationalOP SimpleExpr Sign AddOPTermAux AddOP Term MultOPFactorAux MultOP Factor
+%type <node> Prog ProgHeading ProgBlock VarPart VarPartAux VarDeclaration IDList IDListAux FuncPart FuncDeclaration FuncHeading FuncHeadingAux FuncIdent FormalParamList FormalParamListAux FormalParams FormalParamsAux FuncBlock StatPart CompStat StatList SemicStatAux Stat WritelnPList CommaExpStrAux Expr ParamList CommaExprAux IDAux STRINGAux SimpleExpr AddOP Term Factor
 
 %%
 
@@ -181,29 +181,29 @@ CommaExpStrAux:			COMMA Expr CommaExpStrAux								{$$=create_node("CommaExpStrA
 		|				COMMA STRINGAux CommaExpStrAux							{$$=create_node("CommaExpStrAux", 0, 2, $2, $3);}
 		|				%empty													{$$=create_terminal("Empty", 0, NULL);}
 
-Expr:					SimpleExpr '=' SimpleExpr								
-		|				SimpleExpr DIF SimpleExpr
-		|				SimpleExpr '<' SimpleExpr
-		|				SimpleExpr '>' SimpleExpr
-		|				SimpleExpr LESSEQ SimpleExpr
-		|				SimpleExpr GREATEQ SimpleExpr
-		|				SimpleExpr
+Expr:					SimpleExpr '=' SimpleExpr								{$$=create_node("Eq", 1, 2, $1, $3);}
+		|				SimpleExpr DIF SimpleExpr								{$$=create_node("Neq", 1, 2, $1, $3);}
+		|				SimpleExpr '<' SimpleExpr								{$$=create_node("Lt", 1, 2, $1, $3);}
+		|				SimpleExpr '>' SimpleExpr								{$$=create_node("Gt", 1, 2, $1, $3);}
+		|				SimpleExpr LESSEQ SimpleExpr							{$$=create_node("Leq", 1, 2, $1, $3);}
+		|				SimpleExpr GREATEQ SimpleExpr							{$$=create_node("Geq", 1, 2, $1, $3);}
+		|				SimpleExpr												{$$=create_node("SimpleExpr", 0, 1, $1);}
 
-SimpleExpr:				Term													
-		|				AddOP
+SimpleExpr:				Term													{$$=create_node("Term", 0, 1, $1);}
+		|				AddOP													{$$=create_node("AddOP", 0, 1, $1);}
 
-AddOP:					SimpleExpr '+' Term										
-		|				SimpleExpr '-' Term										
-		|				SimpleExpr OR Term										
-		|				'-' Term
-		|				'+' Term
+AddOP:					SimpleExpr '+' Term										{$$=create_node("Add", 1, 2, $1, $3);}
+		|				SimpleExpr '-' Term										{$$=create_node("Sub", 1, 2, $1, $3);}
+		|				SimpleExpr OR Term										{$$=create_node("Or", 1, 2, $1, $3);}
+		|				'-' Term												{$$=create_node("Minus", 1, 1, $2);}
+		|				'+' Term												{$$=create_node("Plus", 1, 1, $2);}
 
-Term:					Term '/' Factor											
-		|				Term '*' Factor
-		|				Term AND Factor
-		|				Term DIV Factor
-		|				Term MOD Factor
-		|				Factor
+Term:					Term '/' Factor											{$$=create_node("Div", 1, 2, $1, $3);}
+		|				Term '*' Factor											{$$=create_node("Mul", 1, 2, $1, $3);}
+		|				Term AND Factor											{$$=create_node("And", 1, 2, $1, $3);}
+		|				Term DIV Factor											{$$=create_node("RealDiv", 1, 2, $1, $3);}
+		|				Term MOD Factor											{$$=create_node("Mod", 1, 2, $1, $3);}
+		|				Factor													{$$=create_node("Factor", 0, 1, $1);}
 
 Factor:					IDAux													{;}
 		|				NOT Factor												{$$=create_node("Not", 1, 1, $2);}
