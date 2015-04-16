@@ -116,7 +116,7 @@ ProgHeading: 			PROGRAM IDAux LBRAC OUTPUT RBRAC						{$$=create_node("ProgHeadi
 ProgBlock: 				VarPart FuncPart StatPart								{$$=create_node("ProgBlock", 0, 3, $1, $2, $3);}
 
 VarPart: 				VAR VarDeclaration SEMIC VarPartAux						{$$=create_node("VarPart", 1, 2, $2, $4);}
-		|				%empty													{$$=create_terminal("Empty", 0, NULL);}
+		|				%empty													{$$=create_terminal("VarPart", 1, NULL);}
 
 VarPartAux: 			VarDeclaration SEMIC VarPartAux							{$$=create_node("VarPartAux", 0, 2, $1, $3);}
 		|				%empty													{$$=create_terminal("Empty", 0, NULL);}
@@ -132,8 +132,8 @@ FuncPart:  				FuncDeclaration SEMIC FuncPart							{$$=create_node("FuncPart", 
 		|				%empty													{$$=create_terminal("FuncPart", 1, NULL);}
 
 FuncDeclaration: 		FuncHeading SEMIC FORWARD								{$$=create_node("FuncDecl", 1, 1, $1);}
-		|				FuncIdent SEMIC FuncBlock								{$$=create_node("FuncDecl2", 1, 2, $1, $3);}
-		|				FuncHeading SEMIC FuncBlock								{$$=create_node("FuncDecl2", 1, 2, $1, $3);}
+		|				FuncIdent SEMIC FuncBlock								{$$=create_node("FuncDecl", 1, 2, $1, $3);}
+		|				FuncHeading SEMIC FuncBlock								{$$=create_node("FuncDecl", 1, 2, $1, $3);}
 
 FuncHeading: 			FUNCTION IDAux FuncHeadingAux COLON IDAux				{$$=create_node("FuncHeading", 0, 3, $2, $3, $5);}
 
