@@ -79,20 +79,27 @@ node* create_node(char* type, int used, int n_children, ...) {
 }
 
 node* create_ifelse(node* a, node* b, node* c) {
-	if (!strcmp(b->type, "Empty")) {
+	if ((!strcmp(b->type, "Empty")) || ((!strcmp(b->type, "Stat")) && (b->n_children == 0))) {
 		b = create_terminal("StatList", 1, NULL);
 	}
-	if (!strcmp(c->type, "Empty")) {
+	if ((!strcmp(c->type, "Empty")) || ((!strcmp(c->type, "Stat")) && (c->n_children == 0))) {
 		c = create_terminal("StatList", 1, NULL);
 	}
 	return create_node("IfElse", 1, 3, a, b, c);
 }
 
 node* create_repeat(node *a, node *b) {
-	if ((!strcmp(a->type, "StatList")) && (a->n_children == 0)) {
+	if ((!strcmp(a->type, "Empty")) || ((!strcmp(a->type, "StatList")) && (a->n_children == 0))) {
 		a  = create_terminal("StatList", 1, NULL);
 	}
 	return create_node("Repeat", 1, 2, a, b);
+}
+
+node* create_while(node *a, node *b) {
+	if ((!strcmp(b->type, "Empty")) || ((!strcmp(b->type, "StatList")) && (b->n_children == 0))) {
+		b  = create_terminal("StatList", 1, NULL);
+	}
+	return create_node("While", 1, 2, a, b);
 }
 
 void print_node(node* n, int depth) {
@@ -208,7 +215,7 @@ SemicStatAux:			SEMIC Stat SemicStatAux									{$$=create_node("SemicStatAux", 
 Stat: 					CompStat												{$$=create_node("Stat", 0, 1, $1);}
 		|				IF Expr THEN Stat ELSE Stat								{$$=create_ifelse($2, $4, $6);}
 		|				IF Expr THEN Stat										{$$=create_ifelse($2, $4, create_terminal("StatList", 1, NULL));}
-		|				WHILE Expr DO Stat										{$$=create_node("While", 1, 2, $2, $4);}
+		|				WHILE Expr DO Stat										{$$=create_while($2, $4);}
 		|				REPEAT StatList UNTIL Expr								{$$=create_repeat($2, $4);}
 		|				VAL LBRAC PARAMSTR LBRAC Expr RBRAC COMMA IDAux RBRAC 	{$$=create_node("ValParam", 1, 2, $5, $8);}
 		|				IDAux ASSIGN Expr										{$$=create_node("Assign", 1, 2, $1, $3);}
