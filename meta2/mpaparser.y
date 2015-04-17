@@ -28,6 +28,12 @@ node* new_node(char* type, void* value) {
 	return n;
 }
 
+node* create_terminal(char* type, int used, void* value) {
+	node* n = new_node(type, value);
+	n->used = used;
+	return n;
+}
+
 node* create_node(char* type, int used, int n_children, ...) {
 	va_list args;
 	va_start(args, n_children);
@@ -56,8 +62,15 @@ node* create_node(char* type, int used, int n_children, ...) {
 	}
 
 	if (!strcmp(type, "StatList")) {
-		if (i == 1) {
+		if (i < 2) {
 			parent->used = 0;
+		}
+	}
+	if (!strcmp(type, "Program")) {
+		if (i < 4) {
+			parent->children = (node**)realloc(parent->children, sizeof(node)*(parent->n_children+1));
+			parent->n_children++;
+			parent->children[3] = create_terminal("StatList", 1, NULL);
 		}
 	}
 
@@ -65,10 +78,21 @@ node* create_node(char* type, int used, int n_children, ...) {
 	return parent;
 }
 
-node* create_terminal(char* type, int used, void* value) {
-	node* n = new_node(type, value);
-	n->used = used;
-	return n;
+node* create_ifelse(node* a, node* b, node* c) {
+	if (!strcmp(b->type, "Empty")) {
+		b = create_terminal("StatList", 1, NULL);
+	}
+	if (!strcmp(c->type, "Empty")) {
+		c = create_terminal("StatList", 1, NULL);
+	}
+	return create_node("IfElse", 1, 3, a, b, c);
+}
+
+node* create_repeat(node *a, node *b) {
+	if ((!strcmp(a->type, "StatList")) && (a->n_children == 0)) {
+		a  = create_terminal("StatList", 1, NULL);
+	}
+	return create_node("Repeat", 1, 2, a, b);
 }
 
 void print_node(node* n, int depth) {
@@ -84,7 +108,7 @@ void print_node(node* n, int depth) {
 		printf("%s(%s)\n", n->type, (char*)n->value);
 	}
 	else if (!strcmp(n->type, "IntLit")) {
-		printf("%s(%d)\n", n->type, *((int*)n->value));
+		printf("%s(%s)\n", n->type, (char*)n->value);
 	}
 	else if (!strcmp(n->type, "RealLit")) {
 		printf("%s(%s)\n", n->type, (char*)n->value);
@@ -110,13 +134,12 @@ void print_node(node* n, int depth) {
 %token <string> AND OR MOD DIV DIF LESSEQ GREATEQ
 
 %union {
-	int intlit;
-	char* reallit, *string, *id;
+	char *intlit, *reallit, *string, *id;
 	struct node *node;
 }
 
 %right ELSE THEN
-%right ASSIGN.
+%right ASSIGN
 
 %type <node> Prog ProgHeading ProgBlock VarPart VarPartAux VarDeclaration IDList IDListAux FuncPart FuncDeclaration FuncHeading FuncHeadingAux FuncIdent FormalParamList FormalParamListAux FormalParams FuncBlock StatPart CompStat StatList SemicStatAux Stat WritelnPList CommaExpStrAux Expr ParamList CommaExprAux IDAux STRINGAux SimpleExpr AddOP Term Factor VarParams Params
 
@@ -126,7 +149,7 @@ Prog:					ProgHeading SEMIC ProgBlock DOT							{$$ = parsing_tree = create_node
 
 ProgHeading: 			PROGRAM IDAux LBRAC OUTPUT RBRAC						{$$=create_node("ProgHeading", 0, 1, $2);}
 
-ProgBlock: 				VarPart FuncPart StatPart								{$$=create_node("ProgBlock", 0, 3, $1, $2, $3);}
+ProgBlock: 				VarPart FuncPart StatPart								{$$=create_node("ProgHeading", 0, 3, $1, $2, $3);}
 
 VarPart: 				VAR VarDeclaration SEMIC VarPartAux						{$$=create_node("VarPart", 1, 2, $2, $4);}
 		|				%empty													{$$=create_terminal("VarPart", 1, NULL);}
@@ -183,10 +206,10 @@ SemicStatAux:			SEMIC Stat SemicStatAux									{$$=create_node("SemicStatAux", 
 		|				%empty													{$$=create_terminal("Empty", 0, NULL);}
 
 Stat: 					CompStat												{$$=create_node("Stat", 0, 1, $1);}
-		|				IF Expr THEN Stat ELSE Stat								{$$=create_node("IfElse", 1, 3, $2, $4, $6);}
-		|				IF Expr THEN Stat										{$$=create_node("IfElse", 1, 3, $2, $4, create_terminal("StatList", 1, NULL));}
+		|				IF Expr THEN Stat ELSE Stat								{$$=create_ifelse($2, $4, $6);}
+		|				IF Expr THEN Stat										{$$=create_ifelse($2, $4, create_terminal("StatList", 1, NULL));}
 		|				WHILE Expr DO Stat										{$$=create_node("While", 1, 2, $2, $4);}
-		|				REPEAT StatList UNTIL Expr								{$$=create_node("Repeat", 1, 2, $2, $4);}
+		|				REPEAT StatList UNTIL Expr								{$$=create_repeat($2, $4);}
 		|				VAL LBRAC PARAMSTR LBRAC Expr RBRAC COMMA IDAux RBRAC 	{$$=create_node("ValParam", 1, 2, $5, $8);}
 		|				IDAux ASSIGN Expr										{$$=create_node("Assign", 1, 2, $1, $3);}
 		|				WRITELN WritelnPList									{$$=create_node("WriteLn", 1, 1, $2);}
@@ -228,7 +251,7 @@ Factor:					IDAux													{;}
 		|				NOT Factor												{$$=create_node("Not", 1, 1, $2);}
 		|				LBRAC Expr RBRAC										{$$=create_node("LbracRbrac", 1, 1, $2);}
 		|				IDAux ParamList											{$$=create_node("Call", 1, 2, $1, $2);}
-		|				INTLIT													{int *aux = (int*)malloc(sizeof(int)); *aux = $1; $$=create_terminal("IntLit", 1, aux);}
+		|				INTLIT													{$$=create_terminal("IntLit", 1, $1);}
 		|				REALLIT													{$$=create_terminal("RealLit", 1, $1);}
 
 ParamList:				LBRAC Expr CommaExprAux RBRAC							{$$=create_node("ParamList", 0, 2, $2, $3);}
