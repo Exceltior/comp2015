@@ -74,6 +74,21 @@ node* create_node(char* type, int used, int n_children, ...) {
 		}
 	}
 
+	if (!strcmp(type, "FuncPart")) {
+		int k;
+		for (k=0;k<parent->n_children;k++) {
+			cur = parent->children[k];
+			if (!strcmp(cur->type, "FuncPart")) {
+				parent->children = (node**)realloc(parent->children, sizeof(node)*(k+cur->n_children));
+				parent->n_children = k+cur->n_children;
+				for (j=0;j<cur->n_children;j++) {
+					parent->children[k] = cur->children[j];
+					k++;
+				}
+			}
+		}
+	}
+
 	va_end(args);
 	return parent;
 }
@@ -96,10 +111,17 @@ node* create_repeat(node *a, node *b) {
 }
 
 node* create_while(node *a, node *b) {
-	if ((!strcmp(b->type, "Empty")) || ((!strcmp(b->type, "StatList")) && (b->n_children == 0))) {
+	if ((!strcmp(b->type, "Empty")) || ((b->n_children == 0))) {
 		b  = create_terminal("StatList", 1, NULL);
 	}
 	return create_node("While", 1, 2, a, b);
+}
+
+node* create_funcblock(node *a, node* b) {
+	if ((!strcmp(b->type, "StatPart")) && (b->n_children == 0)) {
+		b = create_terminal("StatList", 1, NULL);
+	}
+	create_node("FuncBlock", 0, 2, a, b);
 }
 
 void print_node(node* n, int depth) {
@@ -145,7 +167,8 @@ void print_node(node* n, int depth) {
 	struct node *node;
 }
 
-%right ELSE THEN
+%right THEN
+%right ELSE
 %right ASSIGN
 
 %type <node> Prog ProgHeading ProgBlock VarPart VarPartAux VarDeclaration IDList IDListAux FuncPart FuncDeclaration FuncHeading FuncHeadingAux FuncIdent FormalParamList FormalParamListAux FormalParams FuncBlock StatPart CompStat StatList SemicStatAux Stat WritelnPList CommaExpStrAux Expr ParamList CommaExprAux IDAux STRINGAux SimpleExpr AddOP Term Factor VarParams Params
@@ -178,10 +201,11 @@ FuncDeclaration: 		FuncHeading SEMIC FORWARD								{$$=create_node("FuncDecl", 
 		|				FuncIdent SEMIC FuncBlock								{$$=create_node("FuncDef2", 1, 2, $1, $3);}
 		|				FuncHeading SEMIC FuncBlock								{$$=create_node("FuncDef", 1, 2, $1, $3);}
 
+
 FuncHeading: 			FUNCTION IDAux FuncHeadingAux COLON IDAux				{$$=create_node("FuncHeading", 0, 3, $2, $3, $5);}
 
 FuncHeadingAux:			FormalParamList											{$$=create_node("FuncHeadingAux", 0, 1, $1);}
-		|				%empty													{$$=create_terminal("Empty", 0, NULL);}
+		|				%empty													{$$=create_terminal("FuncParams", 1, NULL);}
 
 FuncIdent:				FUNCTION IDAux											{$$=create_node("FuncIdent", 0, 1, $2);}
 
@@ -190,7 +214,6 @@ FormalParamList: 		LBRAC FormalParams FormalParamListAux RBRAC 			{$$=create_nod
 FormalParamListAux: 	SEMIC FormalParams FormalParamListAux					{$$=create_node("FormalParamListAux", 0, 2, $2, $3);}
 		|				%empty													{$$=create_terminal("Empty", 0, NULL);}
 
-/*FormalParams:			FormalParamsAux IDList COLON IDAux						{$$=create_node("VarParams", 1, 3, $1, $2, $4);}*/
 FormalParams:           VarParams                                               {$$ = create_node("FormalParams", 0, 1, $1);}
         |               Params                                                  {$$ = create_node("FormalParams", 0, 1, $1);}
 
@@ -198,10 +221,7 @@ VarParams:              VAR IDList COLON IDAux                                  
 
 Params:                 IDList COLON IDAux                                      {$$=create_node("Params", 1, 2, $1, $3);}
 
-/*FormalParamsAux:		VAR														{$$=create_terminal("FormalParamsAux", 0, $1);}
-		|				%empty													{$$=create_terminal("Empty", 0, NULL);}*/
-
-FuncBlock: 				VarPart StatPart										{$$=create_node("FuncBlock", 0, 2, $1, $2);}
+FuncBlock: 				VarPart StatPart										{$$=create_funcblock($1, $2);}
 
 StatPart: 				CompStat												{$$=create_node("StatPart", 0, 1, $1);}
 
@@ -256,7 +276,7 @@ Term:					Term '/' Factor											{$$=create_node("RealDiv", 1, 2, $1, $3);}
 
 Factor:					IDAux													{;}
 		|				NOT Factor												{$$=create_node("Not", 1, 1, $2);}
-		|				LBRAC Expr RBRAC										{$$=create_node("LbracRbrac", 1, 1, $2);}
+		|				LBRAC Expr RBRAC										{$$=create_node("LbracRbrac", 0, 1, $2);}
 		|				IDAux ParamList											{$$=create_node("Call", 1, 2, $1, $2);}
 		|				INTLIT													{$$=create_terminal("IntLit", 1, $1);}
 		|				REALLIT													{$$=create_terminal("RealLit", 1, $1);}
