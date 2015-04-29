@@ -1,0 +1,11 @@
+program gcd(output);
+function derp : integer ; forward;
+function derp2(a, b : integer): integer;
+    var c, d : integer;
+    begin
+    end;
+begin
+    { := b+1*3;
+    while b/2 mod 5 > 0 do}
+    if a > 0 then
+end.
