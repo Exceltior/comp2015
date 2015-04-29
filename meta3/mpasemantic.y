@@ -4,6 +4,8 @@
 #include <string.h>
 #include <stdarg.h>
 #define OP_PARSING_TREE "-t"
+#define OP_SEMANTIC_TABLE "-s"
+#define TABLE_SIZE 500
 
 typedef struct node {
 	char* type;
@@ -161,7 +163,100 @@ typedef struct symbol {
 	char* type;
 	char* flag;
 	char* value;
+	struct symbol* next;
 } symbol;
+
+typedef struct symbol_table {
+	symbol* first;
+	char* name;
+} symbol_table;
+
+symbol_table** table;
+int cur_table_index = 2;
+
+symbol_table** new_table(int size) {
+	return (symbol_table**)malloc(sizeof(symbol_table)*size);
+}
+
+symbol* new_symbol(char* name, char* type, char* flag, char* value) {
+	symbol* s = (symbol*)malloc(sizeof(symbol));
+	s->name = name;
+	s->type = type;
+	s->flag = flag;
+	s->value = value;
+	return s;
+}
+
+symbol_table* new_symbol_table(char* name) {
+	symbol_table* st = (symbol_table*)malloc(sizeof(symbol_table));
+	st->name = strdup(name);
+	return st;
+}
+
+void insert_symbol(symbol_table* st, char* name, char* type, char* flag, char* value) {
+	symbol* first = st->first;
+	if (first == NULL) {
+		st->first = new_symbol(name, type, flag, value);
+		return;
+	}
+	while(first->next != NULL) {
+		first = first->next;
+	}
+	first->next = new_symbol(name, type, flag, value);
+}
+
+void print_symbol_table(symbol_table* st) {
+	symbol* first = st->first;
+	printf("===== %s Symbol Table =====\n", st->name);
+	while(first != NULL) {
+		printf("%s\t%s", first->name, first->type);
+		if (first->flag != NULL) {
+			printf("\t%s", first->flag);
+			if (first->value != NULL) {
+				printf("\t%s", first->value);
+			}
+		}
+		printf("\n");
+		first = first->next;
+	}
+}
+
+void print_table () {
+	int i = 0;
+	while(table[i] != NULL) {
+		if (i!=0) {
+			printf("\n");
+		}
+		print_symbol_table(table[i]);
+		i++;
+	}
+}
+
+void init_outer_table() {
+	table[0] = new_symbol_table("Outer");
+	insert_symbol(table[0], "boolean", "_type_", "constant", "_boolean_");
+	insert_symbol(table[0], "integer", "_type_", "constant", "_integer_");
+	insert_symbol(table[0], "real", "_type_", "constant", "_real_");
+	insert_symbol(table[0], "false", "_boolean_", "constant", "_false_");
+	insert_symbol(table[0], "true", "_boolean_", "constant", "_true_");
+	insert_symbol(table[0], "paramcount", "_function_", NULL, NULL);
+	insert_symbol(table[0], "program", "_program_", NULL, NULL);
+}
+
+void init_function_symbol_table() {
+	table[1] = new_symbol_table("Function");
+	insert_symbol(table[1], "paramcount", "_integer_", "return", NULL);
+}
+
+void init_table() {
+	table = new_table(TABLE_SIZE);
+	init_outer_table();
+	init_function_symbol_table();
+}
+
+void build_table() {
+	//TODO percorrer arvore, etc
+}
 
 %}
 
@@ -308,9 +403,17 @@ int yyerror() {
 
 int main(int argc, char** argv) {
 	yyparse();
-	if (argc > 1) {
-		if (!strcmp(argv[1], OP_PARSING_TREE) && !error_flag) {
-			print_node(parsing_tree, 0);
+	init_table();
+	build_table();
+	int i;
+	if (!error_flag) {
+		for (i=0;i<argc;i++) {
+			if (!strcmp(argv[i], OP_PARSING_TREE)) {
+				print_node(parsing_tree, 0);
+			}
+			else if (!strcmp(argv[i], OP_SEMANTIC_TABLE)) {
+				print_table();
+			}
 		}
 	}
 	return 0;
