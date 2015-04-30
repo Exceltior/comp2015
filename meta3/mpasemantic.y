@@ -21,7 +21,7 @@ int error_flag;
 extern int yyleng, yylineno, col;
 extern char* yytext;
 
-/*syntax*/
+/*parsing tree*/
 node* new_node(char* type, void* value) {
 	node* n = (node*)malloc(sizeof(node));
 	n->type = strdup(type);
@@ -172,7 +172,7 @@ typedef struct symbol_table {
 } symbol_table;
 
 symbol_table** table;
-int cur_table_index = 2;
+int cur_table_index = 1;
 
 symbol_table** new_table(int size) {
 	return (symbol_table**)malloc(sizeof(symbol_table)*size);
@@ -193,7 +193,22 @@ symbol_table* new_symbol_table(char* name) {
 	return st;
 }
 
+char* str_to_lower(char* str) {
+	if (str == NULL)
+		return NULL;
+	int i;
+	char* s = (char*)malloc(sizeof(char)*strlen(str));
+	for (i=0;i<strlen(str);i++) {
+		s[i] = tolower(str[i]);
+	}
+	return s;
+}
+
 void insert_symbol(symbol_table* st, char* name, char* type, char* flag, char* value) {
+	name = str_to_lower(name);
+	type = str_to_lower(type);
+	flag = str_to_lower(flag);
+	value = str_to_lower(value);
 	symbol* first = st->first;
 	if (first == NULL) {
 		st->first = new_symbol(name, type, flag, value);
@@ -209,11 +224,11 @@ void print_symbol_table(symbol_table* st) {
 	symbol* first = st->first;
 	printf("===== %s Symbol Table =====\n", st->name);
 	while(first != NULL) {
-		printf("%s\t%s", first->name, first->type);
+		printf("%s\t_%s_", first->name, first->type);
 		if (first->flag != NULL) {
 			printf("\t%s", first->flag);
 			if (first->value != NULL) {
-				printf("\t%s", first->value);
+				printf("\t_%s_", first->value);
 			}
 		}
 		printf("\n");
@@ -234,18 +249,18 @@ void print_table () {
 
 void init_outer_table() {
 	table[0] = new_symbol_table("Outer");
-	insert_symbol(table[0], "boolean", "_type_", "constant", "_boolean_");
-	insert_symbol(table[0], "integer", "_type_", "constant", "_integer_");
-	insert_symbol(table[0], "real", "_type_", "constant", "_real_");
-	insert_symbol(table[0], "false", "_boolean_", "constant", "_false_");
-	insert_symbol(table[0], "true", "_boolean_", "constant", "_true_");
-	insert_symbol(table[0], "paramcount", "_function_", NULL, NULL);
-	insert_symbol(table[0], "program", "_program_", NULL, NULL);
+	insert_symbol(table[0], "boolean", "type", "constant", "boolean");
+	insert_symbol(table[0], "integer", "type", "constant", "integer");
+	insert_symbol(table[0], "real", "type", "constant", "real");
+	insert_symbol(table[0], "false", "boolean", "constant", "false");
+	insert_symbol(table[0], "true", "boolean", "constant", "true");
+	insert_symbol(table[0], "paramcount", "function", NULL, NULL);
+	insert_symbol(table[0], "program", "program", NULL, NULL);
 }
 
 void init_function_symbol_table() {
 	table[1] = new_symbol_table("Function");
-	insert_symbol(table[1], "paramcount", "_integer_", "return", NULL);
+	insert_symbol(table[1], "paramcount", "integer", "return", NULL);
 }
 
 void init_table() {
@@ -254,8 +269,57 @@ void init_table() {
 	init_function_symbol_table();
 }
 
-void build_table() {
-	//TODO percorrer arvore, etc
+void build_table(node* n) {
+	int i;
+	char* symbol_type;
+	if (!strcmp(n->type, "Program")) {
+		cur_table_index++;
+		table[cur_table_index] = new_symbol_table("Program");
+	}
+	else if ((!strcmp(n->type, "FuncDef")) || (!strcmp(n->type, "FuncDecl"))) {
+		insert_symbol(table[2], n->children[0]->value, "function", NULL, NULL);
+		while(table[cur_table_index] != NULL) {
+			cur_table_index++;
+		}
+		table[cur_table_index] = new_symbol_table("Function");
+		insert_symbol(table[cur_table_index], n->children[0]->value, n->children[2]->value, "return", NULL);
+	}
+	else if (!strcmp(n->type, "FuncDef2")) {
+		int index = -1;
+		for (i=0;i<cur_table_index;i++) {
+			if (!strcmp(table[i]->first->name, str_to_lower(n->children[0]->value))) {
+				index = i;
+				break;
+			}
+		}
+		if (index != -1) {
+			cur_table_index = index;
+		}
+		else {
+			/*TODO ERRORS*/
+		}
+	}
+	else if (!strcmp(n->type, "VarDecl")) {
+		symbol_type = n->children[n->n_children-1]->value;
+		for (i=0;i<n->n_children-1;i++) {
+			insert_symbol(table[cur_table_index], n->children[i]->value, symbol_type, NULL, NULL);
+		}
+	}
+	else if (!strcmp(n->type, "Params")) {
+		symbol_type = n->children[n->n_children-1]->value;
+		for (i=0;i<n->n_children-1;i++) {
+			insert_symbol(table[cur_table_index], n->children[i]->value, symbol_type, "param", NULL);
+		}
+	}
+	else if (!strcmp(n->type, "VarParams")) {
+		symbol_type = n->children[n->n_children-1]->value;
+		for (i=0;i<n->n_children-1;i++) {
+			insert_symbol(table[cur_table_index], n->children[i]->value, symbol_type, "varparam", NULL);
+		}
+	}
+	for (i=0;i<n->n_children;i++) {
+		build_table(n->children[i]);
+	}
 }
 
 %}
@@ -404,7 +468,7 @@ int yyerror() {
 int main(int argc, char** argv) {
 	yyparse();
 	init_table();
-	build_table();
+	build_table(parsing_tree);
 	int i;
 	if (!error_flag) {
 		for (i=0;i<argc;i++) {

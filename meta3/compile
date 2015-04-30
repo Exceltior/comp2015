@@ -1,3 +1,4 @@
 lex mpasemantic.l
 yacc -d mpasemantic.y
 gcc -o mpasemantic y.tab.c lex.yy.c -ll -ly
+zip mpasemantic.zip mpasemantic.l mpasemantic.y

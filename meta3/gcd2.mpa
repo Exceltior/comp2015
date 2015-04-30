@@ -1,6 +1,37 @@
 program gcd2(output);
 var x, y: integer;
+function gcd2(A, B: integer) : integer ; forward;
 function gcd(A, B: integer): integer;
+ begin
+ if A = 0 then
+ gcd := B
+ else
+ begin
+ while B > 0 do
+ if A > B then
+ A := A - B
+ else
+ B := B - A;
+ gcd := A
+ end
+ end;
+function gcd2;
+ var j, k: integer;
+ begin
+ if A = 0 then
+ gcd := B
+ else
+ begin
+ while B > 0 do
+ if A > B then
+ A := A - B
+ else
+ B := B - A;
+ gcd := A
+ end
+ end;
+function gcd4(var A, B: integer): integer;
+ var j, k: integer;
  begin
  if A = 0 then
  gcd := B
