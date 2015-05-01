@@ -286,11 +286,13 @@ void build_table(node* n) {
 	}
 	else if (!strcmp(n->type, "FuncDef2")) {
 		int index = -1;
-		for (i=0;i<cur_table_index;i++) {
+		i = 0;
+		while(table[i] != NULL) {
 			if (!strcmp(table[i]->first->name, str_to_lower(n->children[0]->value))) {
 				index = i;
 				break;
 			}
+			i++;
 		}
 		if (index != -1) {
 			cur_table_index = index;
