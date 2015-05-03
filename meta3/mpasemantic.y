@@ -13,6 +13,7 @@ typedef struct node {
 	int n_children;
 	char used;
 	struct node** children;
+	int line, col;
 } node;
 
 node* parsing_tree;
@@ -31,8 +32,10 @@ node* new_node(char* type, void* value) {
 	return n;
 }
 
-node* create_terminal(char* type, int used, void* value) {
+node* create_terminal(char* type, int line, int col, int used, void* value) {
 	node* n = new_node(type, value);
+	n->line = line;
+	n->col = col;
 	n->used = used;
 	return n;
 }
@@ -73,7 +76,7 @@ node* create_node(char* type, int used, int n_children, ...) {
 		if (i < 4) {
 			parent->children = (node**)realloc(parent->children, sizeof(node)*(parent->n_children+1));
 			parent->n_children++;
-			parent->children[3] = create_terminal("StatList", 1, NULL);
+			parent->children[3] = create_terminal("StatList", yylineno, col-yyleng, 1, NULL);
 		}
 	}
 
@@ -98,31 +101,31 @@ node* create_node(char* type, int used, int n_children, ...) {
 
 node* create_ifelse(node* a, node* b, node* c) {
 	if ((!strcmp(b->type, "Empty")) || ((!strcmp(b->type, "Stat")) && (b->n_children == 0))) {
-		b = create_terminal("StatList", 1, NULL);
+		b = create_terminal("StatList", yylineno, col-yyleng, 1, NULL);
 	}
 	if ((!strcmp(c->type, "Empty")) || ((!strcmp(c->type, "Stat")) && (c->n_children == 0))) {
-		c = create_terminal("StatList", 1, NULL);
+		c = create_terminal("StatList", yylineno, col-yyleng, 1, NULL);
 	}
 	return create_node("IfElse", 1, 3, a, b, c);
 }
 
 node* create_repeat(node *a, node *b) {
 	if ((!strcmp(a->type, "Empty")) || ((!strcmp(a->type, "StatList")) && (a->n_children == 0))) {
-		a  = create_terminal("StatList", 1, NULL);
+		a  = create_terminal("StatList", yylineno, col-yyleng, 1, NULL);
 	}
 	return create_node("Repeat", 1, 2, a, b);
 }
 
 node* create_while(node *a, node *b) {
 	if ((!strcmp(b->type, "Empty")) || ((b->n_children == 0))) {
-		b  = create_terminal("StatList", 1, NULL);
+		b  = create_terminal("StatList", yylineno, col-yyleng, 1, NULL);
 	}
 	return create_node("While", 1, 2, a, b);
 }
 
 node* create_funcblock(node *a, node* b) {
 	if ((!strcmp(b->type, "StatPart")) && (b->n_children == 0)) {
-		b = create_terminal("StatList", 1, NULL);
+		b = create_terminal("StatList", yylineno, col-yyleng, 1, NULL);
 	}
 	create_node("FuncBlock", 0, 2, a, b);
 }
@@ -204,6 +207,30 @@ char* str_to_lower(char* str) {
 	return s;
 }
 
+/*Errors*/
+char check_symbol_type(char* type) {
+	symbol* first = table[0]->first;
+	while(first != NULL) {
+		if (!strcmp(first->name, type)) {
+			return 1;
+		}
+		first = first->next;
+	}
+	return 0;
+}
+
+char check_already_defined(char* name) {
+	name = str_to_lower(name);
+	symbol* first = table[cur_table_index]->first;
+	while(first != NULL) {
+		if (!strcmp(first->name, name)) {
+			return 1;
+		}
+		first = first->next;
+	}
+	return 0;
+}
+
 void insert_symbol(symbol_table* st, char* name, char* type, char* flag, char* value) {
 	name = str_to_lower(name);
 	type = str_to_lower(type);
@@ -269,8 +296,8 @@ void init_table() {
 	init_function_symbol_table();
 }
 
-void build_table(node* n) {
-	int i;
+char build_table(node* n) {
+	int i, symbol_line, symbol_col;
 	char* symbol_type;
 	if (!strcmp(n->type, "Program")) {
 		cur_table_index++;
@@ -282,7 +309,14 @@ void build_table(node* n) {
 			cur_table_index++;
 		}
 		table[cur_table_index] = new_symbol_table("Function");
-		insert_symbol(table[cur_table_index], n->children[0]->value, n->children[2]->value, "return", NULL);
+		symbol_type = n->children[2]->value;
+		symbol_line = n->children[2]->line;
+		symbol_col = n->children[2]->col;
+		if (!check_symbol_type(n->children[2]->value)) {
+			printf("Line %d, col %d: Type identifier expected\n", symbol_line, symbol_col);
+			exit(0);
+		}
+		insert_symbol(table[cur_table_index], n->children[0]->value, symbol_type, "return", NULL);
 	}
 	else if (!strcmp(n->type, "FuncDef2")) {
 		int index = -1;
@@ -303,18 +337,43 @@ void build_table(node* n) {
 	}
 	else if (!strcmp(n->type, "VarDecl")) {
 		symbol_type = n->children[n->n_children-1]->value;
+		symbol_line = n->children[n->n_children-1]->line;
+		symbol_col = n->children[n->n_children-1]->col;
+		if (!check_symbol_type(symbol_type)) {
+			printf("Line %d, col %d: Type identifier expected\n", symbol_line, symbol_col);
+			exit(0);
+		}
 		for (i=0;i<n->n_children-1;i++) {
-			insert_symbol(table[cur_table_index], n->children[i]->value, symbol_type, NULL, NULL);
+			if (!check_already_defined(n->children[i]->value)) {
+				insert_symbol(table[cur_table_index], n->children[i]->value, symbol_type, NULL, NULL);
+			}
+			else {
+				printf("Line %d, col %d: Symbol %s already defined\n", symbol_line, symbol_col, n->children[i]->value);
+				exit(0);
+			}
+
 		}
 	}
 	else if (!strcmp(n->type, "Params")) {
 		symbol_type = n->children[n->n_children-1]->value;
+		symbol_line = n->children[n->n_children-1]->line;
+		symbol_col = n->children[n->n_children-1]->col;
+		if (!check_symbol_type(symbol_type)) {
+			printf("Line %d, col %d: Type identifier expected\n", symbol_line, symbol_col);
+			exit(0);
+		}
 		for (i=0;i<n->n_children-1;i++) {
 			insert_symbol(table[cur_table_index], n->children[i]->value, symbol_type, "param", NULL);
 		}
 	}
 	else if (!strcmp(n->type, "VarParams")) {
 		symbol_type = n->children[n->n_children-1]->value;
+		symbol_line = n->children[n->n_children-1]->line;
+		symbol_col = n->children[n->n_children-1]->col;
+		if (!check_symbol_type(symbol_type)) {
+			printf("Line %d, col %d: Type identifier expected\n", symbol_line, symbol_col);
+			return;
+		}
 		for (i=0;i<n->n_children-1;i++) {
 			insert_symbol(table[cur_table_index], n->children[i]->value, symbol_type, "varparam", NULL);
 		}
@@ -353,20 +412,20 @@ ProgHeading: 			PROGRAM IDAux LBRAC OUTPUT RBRAC						{$$=create_node("ProgHeadi
 ProgBlock: 				VarPart FuncPart StatPart								{$$=create_node("ProgHeading", 0, 3, $1, $2, $3);}
 
 VarPart: 				VAR VarDeclaration SEMIC VarPartAux						{$$=create_node("VarPart", 1, 2, $2, $4);}
-		|				%empty													{$$=create_terminal("VarPart", 1, NULL);}
+		|				%empty													{$$=create_terminal("VarPart", yylineno, col-yyleng, 1, NULL);}
 
 VarPartAux: 			VarDeclaration SEMIC VarPartAux							{$$=create_node("VarPartAux", 0, 2, $1, $3);}
-		|				%empty													{$$=create_terminal("Empty", 0, NULL);}
+		|				%empty													{$$=create_terminal("Empty", 0, 0, 0, NULL);}
 
 VarDeclaration: 		IDList COLON IDAux										{$$=create_node("VarDecl", 1, 2, $1, $3);}
 
 IDList: 				IDAux IDListAux											{$$=create_node("IDList", 0, 2, $1, $2);}
 
 IDListAux:				COMMA IDAux IDListAux									{$$=create_node("IDListAux", 0, 2, $2, $3);}
-		|				%empty													{$$=create_terminal("Empty", 0, NULL);}
+		|				%empty													{$$=create_terminal("Empty", 0, 0, 0, NULL);}
 
 FuncPart:  				FuncDeclaration SEMIC FuncPart							{$$=create_node("FuncPart", 1, 2, $1, $3);}
-		|				%empty													{$$=create_terminal("FuncPart", 1, NULL);}
+		|				%empty													{$$=create_terminal("FuncPart", yylineno, col-yyleng, 1, NULL);}
 
 FuncDeclaration: 		FuncHeading SEMIC FORWARD								{$$=create_node("FuncDecl", 1, 1, $1);}
 		|				FuncIdent SEMIC FuncBlock								{$$=create_node("FuncDef2", 1, 2, $1, $3);}
@@ -376,14 +435,14 @@ FuncDeclaration: 		FuncHeading SEMIC FORWARD								{$$=create_node("FuncDecl", 
 FuncHeading: 			FUNCTION IDAux FuncHeadingAux COLON IDAux				{$$=create_node("FuncHeading", 0, 3, $2, $3, $5);}
 
 FuncHeadingAux:			FormalParamList											{$$=create_node("FuncHeadingAux", 0, 1, $1);}
-		|				%empty													{$$=create_terminal("FuncParams", 1, NULL);}
+		|				%empty													{$$=create_terminal("FuncParams", yylineno, col-yyleng, 1, NULL);}
 
 FuncIdent:				FUNCTION IDAux											{$$=create_node("FuncIdent", 0, 1, $2);}
 
 FormalParamList: 		LBRAC FormalParams FormalParamListAux RBRAC 			{$$=create_node("FuncParams", 1, 2, $2, $3);}
 
 FormalParamListAux: 	SEMIC FormalParams FormalParamListAux					{$$=create_node("FormalParamListAux", 0, 2, $2, $3);}
-		|				%empty													{$$=create_terminal("Empty", 0, NULL);}
+		|				%empty													{$$=create_terminal("Empty", 0, 0, 0, NULL);}
 
 FormalParams:           VarParams                                               {$$ = create_node("FormalParams", 0, 1, $1);}
         |               Params                                                  {$$ = create_node("FormalParams", 0, 1, $1);}
@@ -401,25 +460,25 @@ CompStat:				YBEGIN StatList END										{$$=create_node("CompStat", 0, 1, $2);
 StatList: 				Stat SemicStatAux										{$$=create_node("StatList", 1, 2, $1, $2);}
 
 SemicStatAux:			SEMIC Stat SemicStatAux									{$$=create_node("SemicStatAux", 0, 2, $2, $3);}
-		|				%empty													{$$=create_terminal("Empty", 0, NULL);}
+		|				%empty													{$$=create_terminal("Empty", 0, 0, 0, NULL);}
 
 Stat: 					CompStat												{$$=create_node("Stat", 0, 1, $1);}
 		|				IF Expr THEN Stat ELSE Stat								{$$=create_ifelse($2, $4, $6);}
-		|				IF Expr THEN Stat										{$$=create_ifelse($2, $4, create_terminal("StatList", 1, NULL));}
+		|				IF Expr THEN Stat										{$$=create_ifelse($2, $4, create_terminal("StatList", yylineno, col-yyleng, 1, NULL));}
 		|				WHILE Expr DO Stat										{$$=create_while($2, $4);}
 		|				REPEAT StatList UNTIL Expr								{$$=create_repeat($2, $4);}
 		|				VAL LBRAC PARAMSTR LBRAC Expr RBRAC COMMA IDAux RBRAC 	{$$=create_node("ValParam", 1, 2, $5, $8);}
 		|				IDAux ASSIGN Expr										{$$=create_node("Assign", 1, 2, $1, $3);}
 		|				WRITELN WritelnPList									{$$=create_node("WriteLn", 1, 1, $2);}
-		|				WRITELN													{$$=create_terminal("WriteLn", 1, $1);}
-		|				%empty													{$$=create_terminal("Empty", 0, NULL);}
+		|				WRITELN													{$$=create_terminal("WriteLn", yylineno, col-yyleng, 1, $1);}
+		|				%empty													{$$=create_terminal("Empty", 0, 0, 0, NULL);}
 
 WritelnPList:			LBRAC Expr CommaExpStrAux RBRAC							{$$=create_node("WritelnPList", 0, 2, $2, $3);}
 		|				LBRAC STRINGAux CommaExpStrAux RBRAC					{$$=create_node("WritelnPList", 0, 2, $2, $3);}
 
 CommaExpStrAux:			COMMA Expr CommaExpStrAux								{$$=create_node("CommaExpStrAux", 0, 2, $2, $3);}
 		|				COMMA STRINGAux CommaExpStrAux							{$$=create_node("CommaExpStrAux", 0, 2, $2, $3);}
-		|				%empty													{$$=create_terminal("Empty", 0, NULL);}
+		|				%empty													{$$=create_terminal("Empty", 0, 0, 0, NULL);}
 
 Expr:					SimpleExpr '=' SimpleExpr								{$$=create_node("Eq", 1, 2, $1, $3);}
 		|				SimpleExpr DIF SimpleExpr								{$$=create_node("Neq", 1, 2, $1, $3);}
@@ -449,17 +508,17 @@ Factor:					IDAux													{;}
 		|				NOT Factor												{$$=create_node("Not", 1, 1, $2);}
 		|				LBRAC Expr RBRAC										{$$=create_node("LbracRbrac", 0, 1, $2);}
 		|				IDAux ParamList											{$$=create_node("Call", 1, 2, $1, $2);}
-		|				INTLIT													{$$=create_terminal("IntLit", 1, $1);}
-		|				REALLIT													{$$=create_terminal("RealLit", 1, $1);}
+		|				INTLIT													{$$=create_terminal("IntLit", yylineno, col-yyleng, 1, $1);}
+		|				REALLIT													{$$=create_terminal("RealLit", yylineno, col-yyleng, 1, $1);}
 
 ParamList:				LBRAC Expr CommaExprAux RBRAC							{$$=create_node("ParamList", 0, 2, $2, $3);}
 
 CommaExprAux:			COMMA Expr CommaExprAux									{$$=create_node("CommaExprAux", 0, 2, $2, $3);}
-		|				%empty													{$$=create_terminal("Empty", 0, NULL);}
+		|				%empty													{$$=create_terminal("Empty", yylineno, col-yyleng, 0, NULL);}
 
-IDAux:					ID														{$$=create_terminal("Id", 1, $1);}
+IDAux:					ID														{$$=create_terminal("Id", yylineno, col-yyleng, 1, $1);}
 
-STRINGAux:				STRING													{$$=create_terminal("String", 1, $1);}
+STRINGAux:				STRING													{$$=create_terminal("String", yylineno, col-yyleng, 1, $1);}
 
 %%
 int yyerror() {
@@ -469,8 +528,10 @@ int yyerror() {
 
 int main(int argc, char** argv) {
 	yyparse();
-	init_table();
-	build_table(parsing_tree);
+	if (!error_flag) {
+		init_table();
+		build_table(parsing_tree);
+	}
 	int i;
 	if (!error_flag) {
 		for (i=0;i<argc;i++) {
