@@ -1,8 +1,8 @@
-/* A Bison parser, made by GNU Bison 3.0.4.  */
+/* A Bison parser, made by GNU Bison 3.0.2.  */
 
 /* Bison implementation for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2015 Free Software Foundation, Inc.
+   Copyright (C) 1984, 1989-1990, 2000-2013 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -44,7 +44,7 @@
 #define YYBISON 1
 
 /* Bison version.  */
-#define YYBISON_VERSION "3.0.4"
+#define YYBISON_VERSION "3.0.2"
 
 /* Skeleton name.  */
 #define YYSKELETON_NAME "yacc.c"
@@ -69,6 +69,8 @@
 #include <string.h>
 #include <stdarg.h>
 #define OP_PARSING_TREE "-t"
+#define OP_SEMANTIC_TABLE "-s"
+#define TABLE_SIZE 500
 
 typedef struct node {
 	char* type;
@@ -76,6 +78,7 @@ typedef struct node {
 	int n_children;
 	char used;
 	struct node** children;
+	int line, col;
 } node;
 
 node* parsing_tree;
@@ -84,7 +87,7 @@ int error_flag;
 extern int yyleng, yylineno, col;
 extern char* yytext;
 
-/*syntax*/
+/*parsing tree*/
 node* new_node(char* type, void* value) {
 	node* n = (node*)malloc(sizeof(node));
 	n->type = strdup(type);
@@ -94,8 +97,10 @@ node* new_node(char* type, void* value) {
 	return n;
 }
 
-node* create_terminal(char* type, int used, void* value) {
+node* create_terminal(char* type, int line, int col, int used, void* value) {
 	node* n = new_node(type, value);
+	n->line = line;
+	n->col = col;
 	n->used = used;
 	return n;
 }
@@ -136,7 +141,7 @@ node* create_node(char* type, int used, int n_children, ...) {
 		if (i < 4) {
 			parent->children = (node**)realloc(parent->children, sizeof(node)*(parent->n_children+1));
 			parent->n_children++;
-			parent->children[3] = create_terminal("StatList", 1, NULL);
+			parent->children[3] = create_terminal("StatList", yylineno, col-yyleng, 1, NULL);
 		}
 	}
 
@@ -161,31 +166,31 @@ node* create_node(char* type, int used, int n_children, ...) {
 
 node* create_ifelse(node* a, node* b, node* c) {
 	if ((!strcmp(b->type, "Empty")) || ((!strcmp(b->type, "Stat")) && (b->n_children == 0))) {
-		b = create_terminal("StatList", 1, NULL);
+		b = create_terminal("StatList", yylineno, col-yyleng, 1, NULL);
 	}
 	if ((!strcmp(c->type, "Empty")) || ((!strcmp(c->type, "Stat")) && (c->n_children == 0))) {
-		c = create_terminal("StatList", 1, NULL);
+		c = create_terminal("StatList", yylineno, col-yyleng, 1, NULL);
 	}
 	return create_node("IfElse", 1, 3, a, b, c);
 }
 
 node* create_repeat(node *a, node *b) {
 	if ((!strcmp(a->type, "Empty")) || ((!strcmp(a->type, "StatList")) && (a->n_children == 0))) {
-		a  = create_terminal("StatList", 1, NULL);
+		a  = create_terminal("StatList", yylineno, col-yyleng, 1, NULL);
 	}
 	return create_node("Repeat", 1, 2, a, b);
 }
 
 node* create_while(node *a, node *b) {
 	if ((!strcmp(b->type, "Empty")) || ((b->n_children == 0))) {
-		b  = create_terminal("StatList", 1, NULL);
+		b  = create_terminal("StatList", yylineno, col-yyleng, 1, NULL);
 	}
 	return create_node("While", 1, 2, a, b);
 }
 
 node* create_funcblock(node *a, node* b) {
 	if ((!strcmp(b->type, "StatPart")) && (b->n_children == 0)) {
-		b = create_terminal("StatList", 1, NULL);
+		b = create_terminal("StatList", yylineno, col-yyleng, 1, NULL);
 	}
 	create_node("FuncBlock", 0, 2, a, b);
 }
@@ -226,10 +231,286 @@ typedef struct symbol {
 	char* type;
 	char* flag;
 	char* value;
+	struct symbol* next;
 } symbol;
 
+typedef struct symbol_table {
+	symbol* first;
+	char* name;
+} symbol_table;
 
-#line 233 "y.tab.c" /* yacc.c:339  */
+symbol_table** table;
+int cur_table_index = 1;
+
+symbol_table** new_table(int size) {
+	return (symbol_table**)malloc(sizeof(symbol_table)*size);
+}
+
+symbol* new_symbol(char* name, char* type, char* flag, char* value) {
+	symbol* s = (symbol*)malloc(sizeof(symbol));
+	s->name = name;
+	s->type = type;
+	s->flag = flag;
+	s->value = value;
+	return s;
+}
+
+symbol_table* new_symbol_table(char* name) {
+	symbol_table* st = (symbol_table*)malloc(sizeof(symbol_table));
+	st->name = strdup(name);
+	return st;
+}
+
+char* str_to_lower(char* str) {
+	if (str == NULL)
+		return NULL;
+	int i;
+	char* s = (char*)malloc(sizeof(char)*strlen(str));
+	for (i=0;i<strlen(str);i++) {
+		s[i] = tolower(str[i]);
+	}
+	return s;
+}
+
+/*Errors*/
+char check_symbol_type(char* type) {
+	symbol* first = table[0]->first;
+	while(first != NULL) {
+		if (!strcmp(first->name, type)) {
+			return 1;
+		}
+		first = first->next;
+	}
+	return 0;
+}
+
+char check_already_defined(char* name) {
+	name = str_to_lower(name);
+	symbol* first = table[cur_table_index]->first;
+	while(first != NULL) {
+		if (!strcmp(first->name, name)) {
+			return 1;
+		}
+		first = first->next;
+	}
+	return 0;
+}
+
+//Check if id exists and is type on current scope, program scope and outer scope
+char check_global_types(char *type) {
+    type = str_to_lower(type);
+	symbol* first = table[cur_table_index]->first;
+	while(first != NULL) {
+		if (!strcmp(first->name, type)) {
+            if(first->type != NULL && !strcmp(first->type, "type"))
+			    return 1;
+		}
+		first = first->next;
+	}
+    first = table[2]->first;
+	while(first != NULL) {
+		if (!strcmp(first->name, type)) {
+            if(first->type != NULL && !strcmp(first->type, "type"))
+			    return 1;			
+		}
+		first = first->next;
+	}
+    first = table[0]->first;
+	while(first != NULL) {
+		if (!strcmp(first->name, type)) {
+			if(first->type != NULL && !strcmp(first->type, "type"))
+			    return 1;
+		}
+		first = first->next;
+	}
+	return 0;
+}
+
+//Check if id exists and is type on current scope, program scope and outer scope
+char check_global_ids(char *name) {
+    name = str_to_lower(name);
+	symbol* first = table[cur_table_index]->first;
+	while(first != NULL) {
+		if (!strcmp(first->name, name)) {
+            return 1;
+		}
+		first = first->next;
+	}
+    first = table[2]->first;
+	while(first != NULL) {
+		if (!strcmp(first->name, name)) {
+            return 1;		
+		}
+		first = first->next;
+	}
+    first = table[0]->first;
+	while(first != NULL) {
+		if (!strcmp(first->name, name)) {
+	        return 1;
+		}
+		first = first->next;
+	}
+	return 0;
+}
+
+void insert_symbol(symbol_table* st, char* name, char* type, char* flag, char* value) {
+	name = str_to_lower(name);
+	type = str_to_lower(type);
+	flag = str_to_lower(flag);
+	value = str_to_lower(value);
+	symbol* first = st->first;
+	if (first == NULL) {
+		st->first = new_symbol(name, type, flag, value);
+		return;
+	}
+	while(first->next != NULL) {
+		first = first->next;
+	}
+	first->next = new_symbol(name, type, flag, value);
+}
+
+void print_symbol_table(symbol_table* st) {
+	symbol* first = st->first;
+	printf("===== %s Symbol Table =====\n", st->name);
+	while(first != NULL) {
+		printf("%s\t_%s_", first->name, first->type);
+		if (first->flag != NULL) {
+			printf("\t%s", first->flag);
+			if (first->value != NULL) {
+				printf("\t_%s_", first->value);
+			}
+		}
+		printf("\n");
+		first = first->next;
+	}
+}
+
+void print_table () {
+	int i = 0;
+	while(table[i] != NULL) {
+		if (i!=0) {
+			printf("\n");
+		}
+		print_symbol_table(table[i]);
+		i++;
+	}
+}
+
+void init_outer_table() {
+	table[0] = new_symbol_table("Outer");
+	insert_symbol(table[0], "boolean", "type", "constant", "boolean");
+	insert_symbol(table[0], "integer", "type", "constant", "integer");
+	insert_symbol(table[0], "real", "type", "constant", "real");
+	insert_symbol(table[0], "false", "boolean", "constant", "false");
+	insert_symbol(table[0], "true", "boolean", "constant", "true");
+	insert_symbol(table[0], "paramcount", "function", NULL, NULL);
+	insert_symbol(table[0], "program", "program", NULL, NULL);
+}
+
+void init_function_symbol_table() {
+	table[1] = new_symbol_table("Function");
+	insert_symbol(table[1], "paramcount", "integer", "return", NULL);
+}
+
+void init_table() {
+	table = new_table(TABLE_SIZE);
+	init_outer_table();
+	init_function_symbol_table();
+}
+
+char build_table(node* n) {
+	int i, symbol_line, symbol_col;
+	char* symbol_type;
+	if (!strcmp(n->type, "Program")) {
+		cur_table_index++;
+		table[cur_table_index] = new_symbol_table("Program");
+	}
+	else if ((!strcmp(n->type, "FuncDef")) || (!strcmp(n->type, "FuncDecl"))) {
+		symbol_type = n->children[2]->value;
+		symbol_line = n->children[2]->line;
+		symbol_col = n->children[2]->col;
+		/*if (!check_symbol_type(symbol_type)) {
+			printf("Line %d, col %d: Type identifier expected\n", symbol_line, symbol_col);
+			exit(0);
+		}*/
+		insert_symbol(table[2], n->children[0]->value, "function", NULL, NULL);
+		while(table[cur_table_index] != NULL) {
+			cur_table_index++;
+		}
+		table[cur_table_index] = new_symbol_table("Function");
+		insert_symbol(table[cur_table_index], n->children[0]->value, symbol_type, "return", NULL);
+	}
+	else if (!strcmp(n->type, "FuncDef2")) {
+		int index = -1;
+		i = 0;
+		while(table[i] != NULL) {
+			if (!strcmp(table[i]->first->name, str_to_lower(n->children[0]->value))) {
+				index = i;
+				break;
+			}
+			i++;
+		}
+		if (index != -1) {
+			cur_table_index = index;
+		}
+		else {
+			/*TODO ERRORS*/
+		}
+	}
+    //New error checkings for VarDecl
+	else if (!strcmp(n->type, "VarDecl")) {
+		symbol_type = n->children[n->n_children-1]->value;
+		symbol_line = n->children[n->n_children-1]->line;
+		symbol_col = n->children[n->n_children-1]->col;
+        if (!check_global_ids(symbol_type)) {
+            printf("Line %d, col %d: Symbol %s not defined\n", symbol_line, symbol_col, symbol_type);
+            exit(0);          
+        }
+        else if (!check_global_types(symbol_type)) {
+            printf("Line %d, col %d: Type identifier expected\n", symbol_line, symbol_col);
+            exit(0);
+        }
+        for (i=0;i<n->n_children-1;i++) {
+			if (!check_already_defined(n->children[i]->value)) {
+				insert_symbol(table[cur_table_index], n->children[i]->value, symbol_type, NULL, NULL);
+			}
+			else {
+				printf("Line %d, col %d: Symbol %s already defined\n", (int)n->children[i]->line, (int)n->children[i]->col, (char*)n->children[i]->value);
+				exit(0);
+			}
+		}
+	}
+	else if (!strcmp(n->type, "Params")) {
+		symbol_type = n->children[n->n_children-1]->value;
+		symbol_line = n->children[n->n_children-1]->line;
+		symbol_col = n->children[n->n_children-1]->col;
+		/*if (!check_symbol_type(symbol_type)) {
+			printf("Line %d, col %d: Type identifier expected\n", symbol_line, symbol_col);
+			exit(0);
+		}*/
+		for (i=0;i<n->n_children-1;i++) {
+			insert_symbol(table[cur_table_index], n->children[i]->value, symbol_type, "param", NULL);
+		}
+	}
+	else if (!strcmp(n->type, "VarParams")) {
+		symbol_type = n->children[n->n_children-1]->value;
+		symbol_line = n->children[n->n_children-1]->line;
+		symbol_col = n->children[n->n_children-1]->col;
+		/*if (!check_symbol_type(symbol_type)) {
+			printf("Line %d, col %d: Type identifier expected\n", symbol_line, symbol_col);
+			exit(0);
+		}*/
+		for (i=0;i<n->n_children-1;i++) {
+			insert_symbol(table[cur_table_index], n->children[i]->value, symbol_type, "varparam", NULL);
+		}
+	}
+	for (i=0;i<n->n_children;i++) {
+		build_table(n->children[i]);
+	}
+}
+
+
+#line 514 "y.tab.c" /* yacc.c:339  */
 
 # ifndef YY_NULLPTR
 #  if defined __cplusplus && 201103L <= __cplusplus
@@ -344,18 +625,16 @@ extern int yydebug;
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-
+typedef union YYSTYPE YYSTYPE;
 union YYSTYPE
 {
-#line 175 "mpasemantic.y" /* yacc.c:355  */
+#line 456 "mpasemantic.y" /* yacc.c:355  */
 
 	char *intlit, *reallit, *string, *id;
 	struct node *node;
 
-#line 356 "y.tab.c" /* yacc.c:355  */
+#line 637 "y.tab.c" /* yacc.c:355  */
 };
-
-typedef union YYSTYPE YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1
 #endif
@@ -369,7 +648,7 @@ int yyparse (void);
 
 /* Copy the second part of user declarations.  */
 
-#line 373 "y.tab.c" /* yacc.c:358  */
+#line 652 "y.tab.c" /* yacc.c:358  */
 
 #ifdef short
 # undef short
@@ -670,15 +949,15 @@ static const yytype_uint8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,   188,   188,   190,   192,   194,   195,   197,   198,   200,
-     202,   204,   205,   207,   208,   210,   211,   212,   215,   217,
-     218,   220,   222,   224,   225,   227,   228,   230,   232,   234,
-     236,   238,   240,   242,   243,   245,   246,   247,   248,   249,
-     250,   251,   252,   253,   254,   256,   257,   259,   260,   261,
-     263,   264,   265,   266,   267,   268,   269,   271,   272,   274,
-     275,   276,   277,   278,   280,   281,   282,   283,   284,   285,
-     287,   288,   289,   290,   291,   292,   294,   296,   297,   299,
-     301
+       0,   469,   469,   471,   473,   475,   476,   478,   479,   481,
+     483,   485,   486,   488,   489,   491,   492,   493,   496,   498,
+     499,   501,   503,   505,   506,   508,   509,   511,   513,   515,
+     517,   519,   521,   523,   524,   526,   527,   528,   529,   530,
+     531,   532,   533,   534,   535,   537,   538,   540,   541,   542,
+     544,   545,   546,   547,   548,   549,   550,   552,   553,   555,
+     556,   557,   558,   559,   561,   562,   563,   564,   565,   566,
+     568,   569,   570,   571,   572,   573,   575,   577,   578,   580,
+     582
 };
 #endif
 
@@ -1561,481 +1840,481 @@ yyreduce:
   switch (yyn)
     {
         case 2:
-#line 188 "mpasemantic.y" /* yacc.c:1646  */
+#line 469 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node) = parsing_tree = create_node("Program", 1, 2, (yyvsp[-3].node), (yyvsp[-1].node));}
-#line 1567 "y.tab.c" /* yacc.c:1646  */
+#line 1846 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 3:
-#line 190 "mpasemantic.y" /* yacc.c:1646  */
+#line 471 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("ProgHeading", 0, 1, (yyvsp[-3].node));}
-#line 1573 "y.tab.c" /* yacc.c:1646  */
+#line 1852 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 4:
-#line 192 "mpasemantic.y" /* yacc.c:1646  */
+#line 473 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("ProgHeading", 0, 3, (yyvsp[-2].node), (yyvsp[-1].node), (yyvsp[0].node));}
-#line 1579 "y.tab.c" /* yacc.c:1646  */
+#line 1858 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 5:
-#line 194 "mpasemantic.y" /* yacc.c:1646  */
+#line 475 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("VarPart", 1, 2, (yyvsp[-2].node), (yyvsp[0].node));}
-#line 1585 "y.tab.c" /* yacc.c:1646  */
+#line 1864 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 6:
-#line 195 "mpasemantic.y" /* yacc.c:1646  */
-    {(yyval.node)=create_terminal("VarPart", 1, NULL);}
-#line 1591 "y.tab.c" /* yacc.c:1646  */
+#line 476 "mpasemantic.y" /* yacc.c:1646  */
+    {(yyval.node)=create_terminal("VarPart", yylineno, col-yyleng, 1, NULL);}
+#line 1870 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 7:
-#line 197 "mpasemantic.y" /* yacc.c:1646  */
+#line 478 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("VarPartAux", 0, 2, (yyvsp[-2].node), (yyvsp[0].node));}
-#line 1597 "y.tab.c" /* yacc.c:1646  */
+#line 1876 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 8:
-#line 198 "mpasemantic.y" /* yacc.c:1646  */
-    {(yyval.node)=create_terminal("Empty", 0, NULL);}
-#line 1603 "y.tab.c" /* yacc.c:1646  */
+#line 479 "mpasemantic.y" /* yacc.c:1646  */
+    {(yyval.node)=create_terminal("Empty", 0, 0, 0, NULL);}
+#line 1882 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 9:
-#line 200 "mpasemantic.y" /* yacc.c:1646  */
+#line 481 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("VarDecl", 1, 2, (yyvsp[-2].node), (yyvsp[0].node));}
-#line 1609 "y.tab.c" /* yacc.c:1646  */
+#line 1888 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 10:
-#line 202 "mpasemantic.y" /* yacc.c:1646  */
+#line 483 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("IDList", 0, 2, (yyvsp[-1].node), (yyvsp[0].node));}
-#line 1615 "y.tab.c" /* yacc.c:1646  */
+#line 1894 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 11:
-#line 204 "mpasemantic.y" /* yacc.c:1646  */
+#line 485 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("IDListAux", 0, 2, (yyvsp[-1].node), (yyvsp[0].node));}
-#line 1621 "y.tab.c" /* yacc.c:1646  */
+#line 1900 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 12:
-#line 205 "mpasemantic.y" /* yacc.c:1646  */
-    {(yyval.node)=create_terminal("Empty", 0, NULL);}
-#line 1627 "y.tab.c" /* yacc.c:1646  */
+#line 486 "mpasemantic.y" /* yacc.c:1646  */
+    {(yyval.node)=create_terminal("Empty", 0, 0, 0, NULL);}
+#line 1906 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 13:
-#line 207 "mpasemantic.y" /* yacc.c:1646  */
+#line 488 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("FuncPart", 1, 2, (yyvsp[-2].node), (yyvsp[0].node));}
-#line 1633 "y.tab.c" /* yacc.c:1646  */
+#line 1912 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 14:
-#line 208 "mpasemantic.y" /* yacc.c:1646  */
-    {(yyval.node)=create_terminal("FuncPart", 1, NULL);}
-#line 1639 "y.tab.c" /* yacc.c:1646  */
+#line 489 "mpasemantic.y" /* yacc.c:1646  */
+    {(yyval.node)=create_terminal("FuncPart", yylineno, col-yyleng, 1, NULL);}
+#line 1918 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 15:
-#line 210 "mpasemantic.y" /* yacc.c:1646  */
+#line 491 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("FuncDecl", 1, 1, (yyvsp[-2].node));}
-#line 1645 "y.tab.c" /* yacc.c:1646  */
+#line 1924 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 16:
-#line 211 "mpasemantic.y" /* yacc.c:1646  */
+#line 492 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("FuncDef2", 1, 2, (yyvsp[-2].node), (yyvsp[0].node));}
-#line 1651 "y.tab.c" /* yacc.c:1646  */
+#line 1930 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 17:
-#line 212 "mpasemantic.y" /* yacc.c:1646  */
+#line 493 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("FuncDef", 1, 2, (yyvsp[-2].node), (yyvsp[0].node));}
-#line 1657 "y.tab.c" /* yacc.c:1646  */
+#line 1936 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 18:
-#line 215 "mpasemantic.y" /* yacc.c:1646  */
+#line 496 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("FuncHeading", 0, 3, (yyvsp[-3].node), (yyvsp[-2].node), (yyvsp[0].node));}
-#line 1663 "y.tab.c" /* yacc.c:1646  */
+#line 1942 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 19:
-#line 217 "mpasemantic.y" /* yacc.c:1646  */
+#line 498 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("FuncHeadingAux", 0, 1, (yyvsp[0].node));}
-#line 1669 "y.tab.c" /* yacc.c:1646  */
+#line 1948 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 20:
-#line 218 "mpasemantic.y" /* yacc.c:1646  */
-    {(yyval.node)=create_terminal("FuncParams", 1, NULL);}
-#line 1675 "y.tab.c" /* yacc.c:1646  */
+#line 499 "mpasemantic.y" /* yacc.c:1646  */
+    {(yyval.node)=create_terminal("FuncParams", yylineno, col-yyleng, 1, NULL);}
+#line 1954 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 21:
-#line 220 "mpasemantic.y" /* yacc.c:1646  */
+#line 501 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("FuncIdent", 0, 1, (yyvsp[0].node));}
-#line 1681 "y.tab.c" /* yacc.c:1646  */
+#line 1960 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 22:
-#line 222 "mpasemantic.y" /* yacc.c:1646  */
+#line 503 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("FuncParams", 1, 2, (yyvsp[-2].node), (yyvsp[-1].node));}
-#line 1687 "y.tab.c" /* yacc.c:1646  */
+#line 1966 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 23:
-#line 224 "mpasemantic.y" /* yacc.c:1646  */
+#line 505 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("FormalParamListAux", 0, 2, (yyvsp[-1].node), (yyvsp[0].node));}
-#line 1693 "y.tab.c" /* yacc.c:1646  */
+#line 1972 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 24:
-#line 225 "mpasemantic.y" /* yacc.c:1646  */
-    {(yyval.node)=create_terminal("Empty", 0, NULL);}
-#line 1699 "y.tab.c" /* yacc.c:1646  */
+#line 506 "mpasemantic.y" /* yacc.c:1646  */
+    {(yyval.node)=create_terminal("Empty", 0, 0, 0, NULL);}
+#line 1978 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 25:
-#line 227 "mpasemantic.y" /* yacc.c:1646  */
+#line 508 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node) = create_node("FormalParams", 0, 1, (yyvsp[0].node));}
-#line 1705 "y.tab.c" /* yacc.c:1646  */
+#line 1984 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 26:
-#line 228 "mpasemantic.y" /* yacc.c:1646  */
+#line 509 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node) = create_node("FormalParams", 0, 1, (yyvsp[0].node));}
-#line 1711 "y.tab.c" /* yacc.c:1646  */
+#line 1990 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 27:
-#line 230 "mpasemantic.y" /* yacc.c:1646  */
+#line 511 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("VarParams", 1, 2, (yyvsp[-2].node), (yyvsp[0].node));}
-#line 1717 "y.tab.c" /* yacc.c:1646  */
+#line 1996 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 28:
-#line 232 "mpasemantic.y" /* yacc.c:1646  */
+#line 513 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("Params", 1, 2, (yyvsp[-2].node), (yyvsp[0].node));}
-#line 1723 "y.tab.c" /* yacc.c:1646  */
+#line 2002 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 29:
-#line 234 "mpasemantic.y" /* yacc.c:1646  */
+#line 515 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_funcblock((yyvsp[-1].node), (yyvsp[0].node));}
-#line 1729 "y.tab.c" /* yacc.c:1646  */
+#line 2008 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 30:
-#line 236 "mpasemantic.y" /* yacc.c:1646  */
+#line 517 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("StatPart", 0, 1, (yyvsp[0].node));}
-#line 1735 "y.tab.c" /* yacc.c:1646  */
+#line 2014 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 31:
-#line 238 "mpasemantic.y" /* yacc.c:1646  */
+#line 519 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("CompStat", 0, 1, (yyvsp[-1].node));}
-#line 1741 "y.tab.c" /* yacc.c:1646  */
+#line 2020 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 32:
-#line 240 "mpasemantic.y" /* yacc.c:1646  */
+#line 521 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("StatList", 1, 2, (yyvsp[-1].node), (yyvsp[0].node));}
-#line 1747 "y.tab.c" /* yacc.c:1646  */
+#line 2026 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 33:
-#line 242 "mpasemantic.y" /* yacc.c:1646  */
+#line 523 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("SemicStatAux", 0, 2, (yyvsp[-1].node), (yyvsp[0].node));}
-#line 1753 "y.tab.c" /* yacc.c:1646  */
+#line 2032 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 34:
-#line 243 "mpasemantic.y" /* yacc.c:1646  */
-    {(yyval.node)=create_terminal("Empty", 0, NULL);}
-#line 1759 "y.tab.c" /* yacc.c:1646  */
+#line 524 "mpasemantic.y" /* yacc.c:1646  */
+    {(yyval.node)=create_terminal("Empty", 0, 0, 0, NULL);}
+#line 2038 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 35:
-#line 245 "mpasemantic.y" /* yacc.c:1646  */
+#line 526 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("Stat", 0, 1, (yyvsp[0].node));}
-#line 1765 "y.tab.c" /* yacc.c:1646  */
+#line 2044 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 36:
-#line 246 "mpasemantic.y" /* yacc.c:1646  */
+#line 527 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_ifelse((yyvsp[-4].node), (yyvsp[-2].node), (yyvsp[0].node));}
-#line 1771 "y.tab.c" /* yacc.c:1646  */
+#line 2050 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 37:
-#line 247 "mpasemantic.y" /* yacc.c:1646  */
-    {(yyval.node)=create_ifelse((yyvsp[-2].node), (yyvsp[0].node), create_terminal("StatList", 1, NULL));}
-#line 1777 "y.tab.c" /* yacc.c:1646  */
+#line 528 "mpasemantic.y" /* yacc.c:1646  */
+    {(yyval.node)=create_ifelse((yyvsp[-2].node), (yyvsp[0].node), create_terminal("StatList", yylineno, col-yyleng, 1, NULL));}
+#line 2056 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 38:
-#line 248 "mpasemantic.y" /* yacc.c:1646  */
+#line 529 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_while((yyvsp[-2].node), (yyvsp[0].node));}
-#line 1783 "y.tab.c" /* yacc.c:1646  */
+#line 2062 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 39:
-#line 249 "mpasemantic.y" /* yacc.c:1646  */
+#line 530 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_repeat((yyvsp[-2].node), (yyvsp[0].node));}
-#line 1789 "y.tab.c" /* yacc.c:1646  */
+#line 2068 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 40:
-#line 250 "mpasemantic.y" /* yacc.c:1646  */
+#line 531 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("ValParam", 1, 2, (yyvsp[-4].node), (yyvsp[-1].node));}
-#line 1795 "y.tab.c" /* yacc.c:1646  */
+#line 2074 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 41:
-#line 251 "mpasemantic.y" /* yacc.c:1646  */
+#line 532 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("Assign", 1, 2, (yyvsp[-2].node), (yyvsp[0].node));}
-#line 1801 "y.tab.c" /* yacc.c:1646  */
+#line 2080 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 42:
-#line 252 "mpasemantic.y" /* yacc.c:1646  */
+#line 533 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("WriteLn", 1, 1, (yyvsp[0].node));}
-#line 1807 "y.tab.c" /* yacc.c:1646  */
+#line 2086 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 43:
-#line 253 "mpasemantic.y" /* yacc.c:1646  */
-    {(yyval.node)=create_terminal("WriteLn", 1, (yyvsp[0].string));}
-#line 1813 "y.tab.c" /* yacc.c:1646  */
+#line 534 "mpasemantic.y" /* yacc.c:1646  */
+    {(yyval.node)=create_terminal("WriteLn", yylineno, col-yyleng, 1, (yyvsp[0].string));}
+#line 2092 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 44:
-#line 254 "mpasemantic.y" /* yacc.c:1646  */
-    {(yyval.node)=create_terminal("Empty", 0, NULL);}
-#line 1819 "y.tab.c" /* yacc.c:1646  */
+#line 535 "mpasemantic.y" /* yacc.c:1646  */
+    {(yyval.node)=create_terminal("Empty", 0, 0, 0, NULL);}
+#line 2098 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 45:
-#line 256 "mpasemantic.y" /* yacc.c:1646  */
+#line 537 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("WritelnPList", 0, 2, (yyvsp[-2].node), (yyvsp[-1].node));}
-#line 1825 "y.tab.c" /* yacc.c:1646  */
+#line 2104 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 46:
-#line 257 "mpasemantic.y" /* yacc.c:1646  */
+#line 538 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("WritelnPList", 0, 2, (yyvsp[-2].node), (yyvsp[-1].node));}
-#line 1831 "y.tab.c" /* yacc.c:1646  */
+#line 2110 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 47:
-#line 259 "mpasemantic.y" /* yacc.c:1646  */
+#line 540 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("CommaExpStrAux", 0, 2, (yyvsp[-1].node), (yyvsp[0].node));}
-#line 1837 "y.tab.c" /* yacc.c:1646  */
+#line 2116 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 48:
-#line 260 "mpasemantic.y" /* yacc.c:1646  */
+#line 541 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("CommaExpStrAux", 0, 2, (yyvsp[-1].node), (yyvsp[0].node));}
-#line 1843 "y.tab.c" /* yacc.c:1646  */
+#line 2122 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 49:
-#line 261 "mpasemantic.y" /* yacc.c:1646  */
-    {(yyval.node)=create_terminal("Empty", 0, NULL);}
-#line 1849 "y.tab.c" /* yacc.c:1646  */
+#line 542 "mpasemantic.y" /* yacc.c:1646  */
+    {(yyval.node)=create_terminal("Empty", 0, 0, 0, NULL);}
+#line 2128 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 50:
-#line 263 "mpasemantic.y" /* yacc.c:1646  */
+#line 544 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("Eq", 1, 2, (yyvsp[-2].node), (yyvsp[0].node));}
-#line 1855 "y.tab.c" /* yacc.c:1646  */
+#line 2134 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 51:
-#line 264 "mpasemantic.y" /* yacc.c:1646  */
+#line 545 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("Neq", 1, 2, (yyvsp[-2].node), (yyvsp[0].node));}
-#line 1861 "y.tab.c" /* yacc.c:1646  */
+#line 2140 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 52:
-#line 265 "mpasemantic.y" /* yacc.c:1646  */
+#line 546 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("Lt", 1, 2, (yyvsp[-2].node), (yyvsp[0].node));}
-#line 1867 "y.tab.c" /* yacc.c:1646  */
+#line 2146 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 53:
-#line 266 "mpasemantic.y" /* yacc.c:1646  */
+#line 547 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("Gt", 1, 2, (yyvsp[-2].node), (yyvsp[0].node));}
-#line 1873 "y.tab.c" /* yacc.c:1646  */
+#line 2152 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 54:
-#line 267 "mpasemantic.y" /* yacc.c:1646  */
+#line 548 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("Leq", 1, 2, (yyvsp[-2].node), (yyvsp[0].node));}
-#line 1879 "y.tab.c" /* yacc.c:1646  */
+#line 2158 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 55:
-#line 268 "mpasemantic.y" /* yacc.c:1646  */
+#line 549 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("Geq", 1, 2, (yyvsp[-2].node), (yyvsp[0].node));}
-#line 1885 "y.tab.c" /* yacc.c:1646  */
+#line 2164 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 56:
-#line 269 "mpasemantic.y" /* yacc.c:1646  */
+#line 550 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("SimpleExpr", 0, 1, (yyvsp[0].node));}
-#line 1891 "y.tab.c" /* yacc.c:1646  */
+#line 2170 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 57:
-#line 271 "mpasemantic.y" /* yacc.c:1646  */
+#line 552 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("Term", 0, 1, (yyvsp[0].node));}
-#line 1897 "y.tab.c" /* yacc.c:1646  */
+#line 2176 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 58:
-#line 272 "mpasemantic.y" /* yacc.c:1646  */
+#line 553 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("AddOP", 0, 1, (yyvsp[0].node));}
-#line 1903 "y.tab.c" /* yacc.c:1646  */
+#line 2182 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 59:
-#line 274 "mpasemantic.y" /* yacc.c:1646  */
+#line 555 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("Add", 1, 2, (yyvsp[-2].node), (yyvsp[0].node));}
-#line 1909 "y.tab.c" /* yacc.c:1646  */
+#line 2188 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 60:
-#line 275 "mpasemantic.y" /* yacc.c:1646  */
+#line 556 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("Sub", 1, 2, (yyvsp[-2].node), (yyvsp[0].node));}
-#line 1915 "y.tab.c" /* yacc.c:1646  */
+#line 2194 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 61:
-#line 276 "mpasemantic.y" /* yacc.c:1646  */
+#line 557 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("Or", 1, 2, (yyvsp[-2].node), (yyvsp[0].node));}
-#line 1921 "y.tab.c" /* yacc.c:1646  */
+#line 2200 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 62:
-#line 277 "mpasemantic.y" /* yacc.c:1646  */
+#line 558 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("Minus", 1, 1, (yyvsp[0].node));}
-#line 1927 "y.tab.c" /* yacc.c:1646  */
+#line 2206 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 63:
-#line 278 "mpasemantic.y" /* yacc.c:1646  */
+#line 559 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("Plus", 1, 1, (yyvsp[0].node));}
-#line 1933 "y.tab.c" /* yacc.c:1646  */
+#line 2212 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 64:
-#line 280 "mpasemantic.y" /* yacc.c:1646  */
+#line 561 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("RealDiv", 1, 2, (yyvsp[-2].node), (yyvsp[0].node));}
-#line 1939 "y.tab.c" /* yacc.c:1646  */
+#line 2218 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 65:
-#line 281 "mpasemantic.y" /* yacc.c:1646  */
+#line 562 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("Mul", 1, 2, (yyvsp[-2].node), (yyvsp[0].node));}
-#line 1945 "y.tab.c" /* yacc.c:1646  */
+#line 2224 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 66:
-#line 282 "mpasemantic.y" /* yacc.c:1646  */
+#line 563 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("And", 1, 2, (yyvsp[-2].node), (yyvsp[0].node));}
-#line 1951 "y.tab.c" /* yacc.c:1646  */
+#line 2230 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 67:
-#line 283 "mpasemantic.y" /* yacc.c:1646  */
+#line 564 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("Div", 1, 2, (yyvsp[-2].node), (yyvsp[0].node));}
-#line 1957 "y.tab.c" /* yacc.c:1646  */
+#line 2236 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 68:
-#line 284 "mpasemantic.y" /* yacc.c:1646  */
+#line 565 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("Mod", 1, 2, (yyvsp[-2].node), (yyvsp[0].node));}
-#line 1963 "y.tab.c" /* yacc.c:1646  */
+#line 2242 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 69:
-#line 285 "mpasemantic.y" /* yacc.c:1646  */
+#line 566 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("Factor", 0, 1, (yyvsp[0].node));}
-#line 1969 "y.tab.c" /* yacc.c:1646  */
+#line 2248 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 70:
-#line 287 "mpasemantic.y" /* yacc.c:1646  */
+#line 568 "mpasemantic.y" /* yacc.c:1646  */
     {;}
-#line 1975 "y.tab.c" /* yacc.c:1646  */
+#line 2254 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 71:
-#line 288 "mpasemantic.y" /* yacc.c:1646  */
+#line 569 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("Not", 1, 1, (yyvsp[0].node));}
-#line 1981 "y.tab.c" /* yacc.c:1646  */
+#line 2260 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 72:
-#line 289 "mpasemantic.y" /* yacc.c:1646  */
+#line 570 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("LbracRbrac", 0, 1, (yyvsp[-1].node));}
-#line 1987 "y.tab.c" /* yacc.c:1646  */
+#line 2266 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 73:
-#line 290 "mpasemantic.y" /* yacc.c:1646  */
+#line 571 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("Call", 1, 2, (yyvsp[-1].node), (yyvsp[0].node));}
-#line 1993 "y.tab.c" /* yacc.c:1646  */
+#line 2272 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 74:
-#line 291 "mpasemantic.y" /* yacc.c:1646  */
-    {(yyval.node)=create_terminal("IntLit", 1, (yyvsp[0].intlit));}
-#line 1999 "y.tab.c" /* yacc.c:1646  */
+#line 572 "mpasemantic.y" /* yacc.c:1646  */
+    {(yyval.node)=create_terminal("IntLit", yylineno, col-yyleng, 1, (yyvsp[0].intlit));}
+#line 2278 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 75:
-#line 292 "mpasemantic.y" /* yacc.c:1646  */
-    {(yyval.node)=create_terminal("RealLit", 1, (yyvsp[0].reallit));}
-#line 2005 "y.tab.c" /* yacc.c:1646  */
+#line 573 "mpasemantic.y" /* yacc.c:1646  */
+    {(yyval.node)=create_terminal("RealLit", yylineno, col-yyleng, 1, (yyvsp[0].reallit));}
+#line 2284 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 76:
-#line 294 "mpasemantic.y" /* yacc.c:1646  */
+#line 575 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("ParamList", 0, 2, (yyvsp[-2].node), (yyvsp[-1].node));}
-#line 2011 "y.tab.c" /* yacc.c:1646  */
+#line 2290 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 77:
-#line 296 "mpasemantic.y" /* yacc.c:1646  */
+#line 577 "mpasemantic.y" /* yacc.c:1646  */
     {(yyval.node)=create_node("CommaExprAux", 0, 2, (yyvsp[-1].node), (yyvsp[0].node));}
-#line 2017 "y.tab.c" /* yacc.c:1646  */
+#line 2296 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 78:
-#line 297 "mpasemantic.y" /* yacc.c:1646  */
-    {(yyval.node)=create_terminal("Empty", 0, NULL);}
-#line 2023 "y.tab.c" /* yacc.c:1646  */
+#line 578 "mpasemantic.y" /* yacc.c:1646  */
+    {(yyval.node)=create_terminal("Empty", yylineno, col-yyleng, 0, NULL);}
+#line 2302 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 79:
-#line 299 "mpasemantic.y" /* yacc.c:1646  */
-    {(yyval.node)=create_terminal("Id", 1, (yyvsp[0].id));}
-#line 2029 "y.tab.c" /* yacc.c:1646  */
+#line 580 "mpasemantic.y" /* yacc.c:1646  */
+    {(yyval.node)=create_terminal("Id", yylineno, col-yyleng, 1, (yyvsp[0].id));}
+#line 2308 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 80:
-#line 301 "mpasemantic.y" /* yacc.c:1646  */
-    {(yyval.node)=create_terminal("String", 1, (yyvsp[0].string));}
-#line 2035 "y.tab.c" /* yacc.c:1646  */
+#line 582 "mpasemantic.y" /* yacc.c:1646  */
+    {(yyval.node)=create_terminal("String", yylineno, col-yyleng, 1, (yyvsp[0].string));}
+#line 2314 "y.tab.c" /* yacc.c:1646  */
     break;
 
 
-#line 2039 "y.tab.c" /* yacc.c:1646  */
+#line 2318 "y.tab.c" /* yacc.c:1646  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -2263,7 +2542,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 303 "mpasemantic.y" /* yacc.c:1906  */
+#line 584 "mpasemantic.y" /* yacc.c:1906  */
 
 int yyerror() {
 	error_flag = 1;
@@ -2272,9 +2551,19 @@ int yyerror() {
 
 int main(int argc, char** argv) {
 	yyparse();
-	if (argc > 1) {
-		if (!strcmp(argv[1], OP_PARSING_TREE) && !error_flag) {
-			print_node(parsing_tree, 0);
+	if (!error_flag) {
+		init_table();
+		build_table(parsing_tree);
+	}
+	int i;
+	if (!error_flag) {
+		for (i=0;i<argc;i++) {
+			if (!strcmp(argv[i], OP_PARSING_TREE)) {
+				print_node(parsing_tree, 0);
+			}
+			else if (!strcmp(argv[i], OP_SEMANTIC_TABLE)) {
+				print_table();
+			}
 		}
 	}
 	return 0;
