@@ -304,18 +304,18 @@ char build_table(node* n) {
 		table[cur_table_index] = new_symbol_table("Program");
 	}
 	else if ((!strcmp(n->type, "FuncDef")) || (!strcmp(n->type, "FuncDecl"))) {
+		symbol_type = n->children[2]->value;
+		symbol_line = n->children[2]->line;
+		symbol_col = n->children[2]->col;
+		if (!check_symbol_type(symbol_type)) {
+			printf("Line %d, col %d: Type identifier expected\n", symbol_line, symbol_col);
+			exit(0);
+		}
 		insert_symbol(table[2], n->children[0]->value, "function", NULL, NULL);
 		while(table[cur_table_index] != NULL) {
 			cur_table_index++;
 		}
 		table[cur_table_index] = new_symbol_table("Function");
-		symbol_type = n->children[2]->value;
-		symbol_line = n->children[2]->line;
-		symbol_col = n->children[2]->col;
-		if (!check_symbol_type(n->children[2]->value)) {
-			printf("Line %d, col %d: Type identifier expected\n", symbol_line, symbol_col);
-			exit(0);
-		}
 		insert_symbol(table[cur_table_index], n->children[0]->value, symbol_type, "return", NULL);
 	}
 	else if (!strcmp(n->type, "FuncDef2")) {
@@ -372,7 +372,7 @@ char build_table(node* n) {
 		symbol_col = n->children[n->n_children-1]->col;
 		if (!check_symbol_type(symbol_type)) {
 			printf("Line %d, col %d: Type identifier expected\n", symbol_line, symbol_col);
-			return;
+			exit(0);
 		}
 		for (i=0;i<n->n_children-1;i++) {
 			insert_symbol(table[cur_table_index], n->children[i]->value, symbol_type, "varparam", NULL);
