@@ -315,7 +315,7 @@ char check_number_of_arguments(char* name, int n_args) {
 			first = table[i]->first;
 			if (!strcmp(first->name, name)) {
 				while (first != NULL) {
-					if (!strcmp(first->flag, "param"))
+					if ((!strcmp(first->flag, "param")) || (!strcmp(first->flag, "varparam")))
 						n++;
 					first = first->next;
 				}
