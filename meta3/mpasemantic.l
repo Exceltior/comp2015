@@ -5,6 +5,9 @@
 
 int col = 1;
 static int auxLine, auxCol;
+
+#define YY_USER_ACTION yylloc.first_line = yylloc.last_line = yylineno; yylloc.first_column = col; yylloc.last_column = col+yyleng-1; col += yyleng;
+
 %}
 
 %option yylineno

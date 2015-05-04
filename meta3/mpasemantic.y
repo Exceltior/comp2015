@@ -938,120 +938,120 @@ char build_table(node* n) {
 
 %%
 
-Prog:					ProgHeading SEMIC ProgBlock DOT							{$$ = parsing_tree = create_node("Program", yylineno, col-yyleng, 1, 2, $1, $3);}
+Prog:					ProgHeading SEMIC ProgBlock DOT							{$$ = parsing_tree = create_node("Program", -1, -1, 1, 2, $1, $3);}
 
-ProgHeading: 			PROGRAM IDAux LBRAC OUTPUT RBRAC						{$$=create_node("ProgHeading", yylineno, col-yyleng, 0, 1, $2);}
+ProgHeading: 			PROGRAM IDAux LBRAC OUTPUT RBRAC						{$$=create_node("ProgHeading", -1, -1, 0, 1, $2);}
 
-ProgBlock: 				VarPart FuncPart StatPart								{$$=create_node("ProgHeading", yylineno, col-yyleng, 0, 3, $1, $2, $3);}
+ProgBlock: 				VarPart FuncPart StatPart								{$$=create_node("ProgHeading", -1, -1, 0, 3, $1, $2, $3);}
 
-VarPart: 				VAR VarDeclaration SEMIC VarPartAux						{$$=create_node("VarPart", yylineno, col-yyleng, 1, 2, $2, $4);}
-		|				%empty													{$$=create_terminal("VarPart", yylineno, col-yyleng, 1, NULL);}
+VarPart: 				VAR VarDeclaration SEMIC VarPartAux						{$$=create_node("VarPart", -1, -1, 1, 2, $2, $4);}
+		|				%empty													{$$=create_terminal("VarPart", -1, -1, 1, NULL);}
 
-VarPartAux: 			VarDeclaration SEMIC VarPartAux							{$$=create_node("VarPartAux", yylineno, col-yyleng, 0, 2, $1, $3);}
-		|				%empty													{$$=create_terminal("Empty", 0, 0, 0, NULL);}
+VarPartAux: 			VarDeclaration SEMIC VarPartAux							{$$=create_node("VarPartAux", -1, -1, 0, 2, $1, $3);}
+		|				%empty													{$$=create_terminal("Empty", -1, -1, 0, NULL);}
 
-VarDeclaration: 		IDList COLON IDAux										{$$=create_node("VarDecl", yylineno, col-yyleng, 1, 2, $1, $3);}
+VarDeclaration: 		IDList COLON IDAux										{$$=create_node("VarDecl", -1, -1, 1, 2, $1, $3);}
 
-IDList: 				IDAux IDListAux											{$$=create_node("IDList", yylineno, col-yyleng, 0, 2, $1, $2);}
+IDList: 				IDAux IDListAux											{$$=create_node("IDList", -1, -1, 0, 2, $1, $2);}
 
-IDListAux:				COMMA IDAux IDListAux									{$$=create_node("IDListAux", yylineno, col-yyleng, 0, 2, $2, $3);}
-		|				%empty													{$$=create_terminal("Empty", 0, 0, 0, NULL);}
+IDListAux:				COMMA IDAux IDListAux									{$$=create_node("IDListAux", -1, -1, 0, 2, $2, $3);}
+		|				%empty													{$$=create_terminal("Empty", -1, -1, 0, NULL);}
 
-FuncPart:  				FuncDeclaration SEMIC FuncPart							{$$=create_node("FuncPart", yylineno, col-yyleng, 1, 2, $1, $3);}
-		|				%empty													{$$=create_terminal("FuncPart", yylineno, col-yyleng, 1, NULL);}
+FuncPart:  				FuncDeclaration SEMIC FuncPart							{$$=create_node("FuncPart", -1, -1, 1, 2, $1, $3);}
+		|				%empty													{$$=create_terminal("FuncPart", -1, -1, 1, NULL);}
 
-FuncDeclaration: 		FuncHeading SEMIC FORWARD								{$$=create_node("FuncDecl", yylineno, col-yyleng, 1, 1, $1);}
-		|				FuncIdent SEMIC FuncBlock								{$$=create_node("FuncDef2", yylineno, col-yyleng, 1, 2, $1, $3);}
-		|				FuncHeading SEMIC FuncBlock								{$$=create_node("FuncDef", yylineno, col-yyleng, 1, 2, $1, $3);}
+FuncDeclaration: 		FuncHeading SEMIC FORWARD								{$$=create_node("FuncDecl", -1, -1, 1, 1, $1);}
+		|				FuncIdent SEMIC FuncBlock								{$$=create_node("FuncDef2", -1, -1, 1, 2, $1, $3);}
+		|				FuncHeading SEMIC FuncBlock								{$$=create_node("FuncDef", -1, -1, 1, 2, $1, $3);}
 
 
-FuncHeading: 			FUNCTION IDAux FuncHeadingAux COLON IDAux				{$$=create_node("FuncHeading", yylineno, col-yyleng, 0, 3, $2, $3, $5);}
+FuncHeading: 			FUNCTION IDAux FuncHeadingAux COLON IDAux				{$$=create_node("FuncHeading", -1, -1, 0, 3, $2, $3, $5);}
 
-FuncHeadingAux:			FormalParamList											{$$=create_node("FuncHeadingAux", yylineno, col-yyleng, 0, 1, $1);}
-		|				%empty													{$$=create_terminal("FuncParams", yylineno, col-yyleng, 1, NULL);}
+FuncHeadingAux:			FormalParamList											{$$=create_node("FuncHeadingAux", -1, -1, 0, 1, $1);}
+		|				%empty													{$$=create_terminal("FuncParams", -1, -1, 1, NULL);}
 
-FuncIdent:				FUNCTION IDAux											{$$=create_node("FuncIdent", yylineno, col-yyleng, 0, 1, $2);}
+FuncIdent:				FUNCTION IDAux											{$$=create_node("FuncIdent", -1, -1, 0, 1, $2);}
 
-FormalParamList: 		LBRAC FormalParams FormalParamListAux RBRAC 			{$$=create_node("FuncParams", yylineno, col-yyleng, 1, 2, $2, $3);}
+FormalParamList: 		LBRAC FormalParams FormalParamListAux RBRAC 			{$$=create_node("FuncParams", -1, -1, 1, 2, $2, $3);}
 
-FormalParamListAux: 	SEMIC FormalParams FormalParamListAux					{$$=create_node("FormalParamListAux", yylineno, col-yyleng, 0, 2, $2, $3);}
-		|				%empty													{$$=create_terminal("Empty", 0, 0, 0, NULL);}
+FormalParamListAux: 	SEMIC FormalParams FormalParamListAux					{$$=create_node("FormalParamListAux", -1, -1, 0, 2, $2, $3);}
+		|				%empty													{$$=create_terminal("Empty", -1, -1, 0, NULL);}
 
-FormalParams:           VarParams                                               {$$ = create_node("FormalParams", yylineno, col-yyleng, 0, 1, $1);}
-        |               Params                                                  {$$ = create_node("FormalParams", yylineno, col-yyleng, 0, 1, $1);}
+FormalParams:           VarParams                                               {$$ = create_node("FormalParams", -1, -1, 0, 1, $1);}
+        |               Params                                                  {$$ = create_node("FormalParams", -1, -1, 0, 1, $1);}
 
-VarParams:              VAR IDList COLON IDAux                                  {$$=create_node("VarParams", yylineno, col-yyleng, 1, 2, $2, $4);}
+VarParams:              VAR IDList COLON IDAux                                  {$$=create_node("VarParams", -1, -1, 1, 2, $2, $4);}
 
-Params:                 IDList COLON IDAux                                      {$$=create_node("Params", yylineno, col-yyleng, 1, 2, $1, $3);}
+Params:                 IDList COLON IDAux                                      {$$=create_node("Params", -1, -1, 1, 2, $1, $3);}
 
 FuncBlock: 				VarPart StatPart										{$$=create_funcblock($1, $2);}
 
-StatPart: 				CompStat												{$$=create_node("StatPart", yylineno, col-yyleng, 0, 1, $1);}
+StatPart: 				CompStat												{$$=create_node("StatPart", -1, -1, 0, 1, $1);}
 
-CompStat:				YBEGIN StatList END										{$$=create_node("CompStat", yylineno, col-yyleng, 0, 1, $2);}
+CompStat:				YBEGIN StatList END										{$$=create_node("CompStat", -1, -1, 0, 1, $2);}
 
-StatList: 				Stat SemicStatAux										{$$=create_node("StatList", yylineno, col-yyleng, 1, 2, $1, $2);}
+StatList: 				Stat SemicStatAux										{$$=create_node("StatList", -1, -1, 1, 2, $1, $2);}
 
-SemicStatAux:			SEMIC Stat SemicStatAux									{$$=create_node("SemicStatAux", yylineno, col-yyleng, 0, 2, $2, $3);}
-		|				%empty													{$$=create_terminal("Empty", 0, 0, 0, NULL);}
+SemicStatAux:			SEMIC Stat SemicStatAux									{$$=create_node("SemicStatAux", -1, -1, 0, 2, $2, $3);}
+		|				%empty													{$$=create_terminal("Empty", -1, -1, 0, NULL);}
 
-Stat: 					CompStat												{$$=create_node("Stat", yylineno, col-yyleng, 0, 1, $1);}
+Stat: 					CompStat												{$$=create_node("Stat", -1, -1, 0, 1, $1);}
 		|				IF Expr THEN Stat ELSE Stat								{$$=create_ifelse($2, $4, $6);}
 		|				IF Expr THEN Stat										{$$=create_ifelse($2, $4, create_terminal("StatList", yylineno, col-yyleng, 1, NULL));}
 		|				WHILE Expr DO Stat										{$$=create_while($2, $4);}
 		|				REPEAT StatList UNTIL Expr								{$$=create_repeat($2, $4);}
-		|				VAL LBRAC PARAMSTR LBRAC Expr RBRAC COMMA IDAux RBRAC 	{$$=create_node("ValParam", yylineno, col-yyleng, 1, 2, $5, $8);}
-		|				IDAux ASSIGN Expr										{$$=create_node("Assign", yylineno, col-yyleng, 1, 2, $1, $3);}
-		|				WRITELN WritelnPList									{$$=create_node("WriteLn", yylineno, col-yyleng, 1, 1, $2);}
-		|				WRITELN													{$$=create_terminal("WriteLn", yylineno, col-yyleng, 1, $1);}
-		|				%empty													{$$=create_terminal("Empty", 0, 0, 0, NULL);}
+		|				VAL LBRAC PARAMSTR LBRAC Expr RBRAC COMMA IDAux RBRAC 	{$$=create_node("ValParam", -1, -1, 1, 2, $5, $8);}
+		|				IDAux ASSIGN Expr										{$$=create_node("Assign", -1, -1, 1, 2, $1, $3);}
+		|				WRITELN WritelnPList									{$$=create_node("WriteLn", -1, -1, 1, 1, $2);}
+		|				WRITELN													{$$=create_terminal("WriteLn", -1, -1, 1, $1);}
+		|				%empty													{$$=create_terminal("Empty", -1, -1, 0, NULL);}
 
-WritelnPList:			LBRAC Expr CommaExpStrAux RBRAC							{$$=create_node("WritelnPList", yylineno, col-yyleng, 0, 2, $2, $3);}
-		|				LBRAC STRINGAux CommaExpStrAux RBRAC					{$$=create_node("WritelnPList", yylineno, col-yyleng, 0, 2, $2, $3);}
+WritelnPList:			LBRAC Expr CommaExpStrAux RBRAC							{$$=create_node("WritelnPList", -1, -1, 0, 2, $2, $3);}
+		|				LBRAC STRINGAux CommaExpStrAux RBRAC					{$$=create_node("WritelnPList", -1, -1, 0, 2, $2, $3);}
 
-CommaExpStrAux:			COMMA Expr CommaExpStrAux								{$$=create_node("CommaExpStrAux", yylineno, col-yyleng, 0, 2, $2, $3);}
-		|				COMMA STRINGAux CommaExpStrAux							{$$=create_node("CommaExpStrAux", yylineno, col-yyleng, 0, 2, $2, $3);}
-		|				%empty													{$$=create_terminal("Empty", 0, 0, 0, NULL);}
+CommaExpStrAux:			COMMA Expr CommaExpStrAux								{$$=create_node("CommaExpStrAux", -1, -1, 0, 2, $2, $3);}
+		|				COMMA STRINGAux CommaExpStrAux							{$$=create_node("CommaExpStrAux", -1, -1, 0, 2, $2, $3);}
+		|				%empty													{$$=create_terminal("Empty", -1, -1, 0, NULL);}
 
-Expr:					SimpleExpr '=' SimpleExpr								{$$=create_node("Eq", yylineno, col-yyleng, 1, 2, $1, $3);}
-		|				SimpleExpr DIF SimpleExpr								{$$=create_node("Neq", yylineno, col-yyleng, 1, 2, $1, $3);}
-		|				SimpleExpr '<' SimpleExpr								{$$=create_node("Lt", yylineno, col-yyleng, 1, 2, $1, $3);}
-		|				SimpleExpr '>' SimpleExpr								{$$=create_node("Gt", yylineno, col-yyleng, 1, 2, $1, $3);}
-		|				SimpleExpr LESSEQ SimpleExpr							{$$=create_node("Leq", yylineno, col-yyleng, 1, 2, $1, $3);}
-		|				SimpleExpr GREATEQ SimpleExpr							{$$=create_node("Geq", yylineno, col-yyleng, 1, 2, $1, $3);}
-		|				SimpleExpr												{$$=create_node("SimpleExpr", yylineno, col-yyleng, 0, 1, $1);}
+Expr:					SimpleExpr '=' SimpleExpr								{$$=create_node("Eq", @2.first_line, @2.first_column, 1, 2, $1, $3);}
+		|				SimpleExpr DIF SimpleExpr								{$$=create_node("Neq", @2.first_line, @2.first_column, 1, 2, $1, $3);}
+		|				SimpleExpr '<' SimpleExpr								{$$=create_node("Lt", @2.first_line, @2.first_column, 1, 2, $1, $3);}
+		|				SimpleExpr '>' SimpleExpr								{$$=create_node("Gt", @2.first_line, @2.first_column, 1, 2, $1, $3);}
+		|				SimpleExpr LESSEQ SimpleExpr							{$$=create_node("Leq", @2.first_line, @2.first_column, 1, 2, $1, $3);}
+		|				SimpleExpr GREATEQ SimpleExpr							{$$=create_node("Geq", @2.first_line, @2.first_column, 1, 2, $1, $3);}
+		|				SimpleExpr												{$$=create_node("SimpleExpr", -1, -1, 0, 1, $1);}
 
-SimpleExpr:				Term													{$$=create_node("Term", yylineno, col-yyleng, 0, 1, $1);}
-		|				AddOP													{$$=create_node("AddOP", yylineno, col-yyleng, 0, 1, $1);}
+SimpleExpr:				Term													{$$=create_node("Term", -1, -1, 0, 1, $1);}
+		|				AddOP													{$$=create_node("AddOP", -1, -1, 0, 1, $1);}
 
-AddOP:					SimpleExpr '+' Term										{$$=create_node("Add", yylineno, col-yyleng, 1, 2, $1, $3);}
-		|				SimpleExpr '-' Term										{$$=create_node("Sub", yylineno, col-yyleng, 1, 2, $1, $3);}
-		|				SimpleExpr OR Term										{$$=create_node("Or", yylineno, col-yyleng, 1, 2, $1, $3);}
-		|				'-' Term												{$$=create_node("Minus", yylineno, col-yyleng, 1, 1, $2);}
-		|				'+' Term												{$$=create_node("Plus", yylineno, col-yyleng, 1, 1, $2);}
+AddOP:					SimpleExpr '+' Term										{$$=create_node("Add", @2.first_line, @2.first_column, 1, 2, $1, $3);}
+		|				SimpleExpr '-' Term										{$$=create_node("Sub", @2.first_line, @2.first_column, 1, 2, $1, $3);}
+		|				SimpleExpr OR Term										{$$=create_node("Or", @2.first_line, @2.first_column, 1, 2, $1, $3);}
+		|				'-' Term												{$$=create_node("Minus", @1.first_line, @1.first_column, 1, 1, $2);}
+		|				'+' Term												{$$=create_node("Plus", @1.first_line, @1.first_column, 1, 1, $2);}
 
-Term:					Term '/' Factor											{$$=create_node("RealDiv", yylineno, col-yyleng, 1, 2, $1, $3);}
-		|				Term '*' Factor											{$$=create_node("Mul", yylineno, col-yyleng, 1, 2, $1, $3);}
-		|				Term AND Factor											{$$=create_node("And", yylineno, col-yyleng, 1, 2, $1, $3);}
-		|				Term DIV Factor											{$$=create_node("Div", yylineno, col-yyleng, 1, 2, $1, $3);}
-		|				Term MOD Factor											{$$=create_node("Mod", yylineno, col-yyleng, 1, 2, $1, $3);}
-		|				Factor													{$$=create_node("Factor", yylineno, col-yyleng, 0, 1, $1);}
+Term:					Term '/' Factor											{$$=create_node("RealDiv", @2.first_line, @2.first_column, 1, 2, $1, $3);}
+		|				Term '*' Factor											{$$=create_node("Mul", @2.first_line, @2.first_column, 1, 2, $1, $3);}
+		|				Term AND Factor											{$$=create_node("And", @2.first_line, @2.first_column, 1, 2, $1, $3);}
+		|				Term DIV Factor											{$$=create_node("Div", @2.first_line, @2.first_column, 1, 2, $1, $3);}
+		|				Term MOD Factor											{$$=create_node("Mod", @2.first_line, @2.first_column, 1, 2, $1, $3);}
+		|				Factor													{$$=create_node("Factor", -1, -1, 0, 1, $1);}
 
 Factor:					IDAux													{;}
-		|				NOT Factor												{$$=create_node("Not", yylineno, col-yyleng, 1, 1, $2);}
-		|				LBRAC Expr RBRAC										{$$=create_node("LbracRbrac", yylineno, col-yyleng, 0, 1, $2);}
-		|				IDAux ParamList											{$$=create_node("Call", yylineno, col-yyleng, 1, 2, $1, $2);}
-		|				INTLIT													{$$=create_terminal("IntLit", yylineno, col-yyleng, 1, $1);}
-		|				REALLIT													{$$=create_terminal("RealLit", yylineno, col-yyleng, 1, $1);}
+		|				NOT Factor												{$$=create_node("Not", @1.first_line, @1.first_column, 1, 1, $2);}
+		|				LBRAC Expr RBRAC										{$$=create_node("LbracRbrac", -1, -1, 0, 1, $2);}
+		|				IDAux ParamList											{$$=create_node("Call", @1.first_line, @1.first_column, 1, 2, $1, $2);}
+		|				INTLIT													{$$=create_terminal("IntLit", @1.first_line, @1.first_column, 1, $1);}
+		|				REALLIT													{$$=create_terminal("RealLit", @1.first_line, @1.first_column, 1, $1);}
 
-ParamList:				LBRAC Expr CommaExprAux RBRAC							{$$=create_node("ParamList", yylineno, col-yyleng, 0, 2, $2, $3);}
+ParamList:				LBRAC Expr CommaExprAux RBRAC							{$$=create_node("ParamList", -1, -1, 0, 2, $2, $3);}
 
-CommaExprAux:			COMMA Expr CommaExprAux									{$$=create_node("CommaExprAux", yylineno, col-yyleng, 0, 2, $2, $3);}
-		|				%empty													{$$=create_terminal("Empty", yylineno, col-yyleng, 0, NULL);}
+CommaExprAux:			COMMA Expr CommaExprAux									{$$=create_node("CommaExprAux", -1, -1, 0, 2, $2, $3);}
+		|				%empty													{$$=create_terminal("Empty", -1, -1, 0, NULL);}
 
-IDAux:					ID														{$$=create_terminal("Id", yylineno, col-yyleng, 1, $1);}
+IDAux:					ID														{$$=create_terminal("Id", @1.first_line, @1.first_column, 1, $1);}
 
-STRINGAux:				STRING													{$$=create_terminal("String", yylineno, col-yyleng, 1, $1);}
+STRINGAux:				STRING													{$$=create_terminal("String", @1.first_line, @1.first_column, 1, $1);}
 
 %%
 int yyerror() {
