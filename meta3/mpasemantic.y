@@ -342,11 +342,50 @@ char check_number_of_arguments(char* name, int n_args) {
 }
 
 
-char check_write_value(char* name) {
+char check_write_value(char* name, char* type) {
 	name = str_to_lower(name);
 	symbol* first = table[cur_table_index]->first;
-	while(first != NULL) {
-		if (!strcmp(first->name, name))
+	if (!strcmp(type, "Id")) {
+		while(first != NULL) {
+			if (!strcmp(first->name, "integer"))
+				return 1;
+			else if (!strcmp(first->name, "boolean"))
+				return 1;
+			else if (!strcmp(first->name, "real"))
+				return 1;
+			first = first->next;
+		}
+	}
+	else if (!strcmp(type, "String")) {
+		return 1;
+	}
+	return 0;
+}
+
+char* check_function_write_value(char* name) {
+	int i = 0, n = 0;
+	symbol* first;
+	name = str_to_lower(name);
+	while(table[i] != NULL) {
+		if (!strcmp(table[i]->name, "Function")) {
+			first = table[i]->first;
+			if (!strcmp(first->name, name)) {
+				return first->type;
+			}
+		}
+		i++;
+	}
+	return NULL;
+}
+
+char check_return_type(char* type) {
+	if (type == NULL)
+		return 0;
+	int i;
+	type = str_to_lower(type);
+	symbol* first = table[0]->first;
+	for (i=0;i<5;i++) {
+		if (!strcmp(first->name, type))
 			return 1;
 		first = first->next;
 	}
@@ -560,16 +599,23 @@ char build_table(node* n) {
 		}
 	}
 	else if (!strcmp(n->type, "WriteLn")) {
-		if (n->n_children > 0) {
-			char* name = n->children[0]->value;
-			if (name != NULL) {
-				symbol_line = n->children[0]->line;
-				symbol_col = n->children[0]->col;
-				if (!strcmp(n->children[0]->type, "Id")) {
-					if (!check_write_value(name)) {
-						printf("Line %d, col %d: Cannot write values of type %s\n", symbol_line, symbol_col, name);
-						exit(0);
-					}
+		int i;
+		char* name;
+		for (i=0;i<n->n_children;i++) {
+			name = n->children[i]->value;
+			symbol_line = n->children[i]->line;
+			symbol_col = n->children[i]->col;
+			if (!strcmp(n->children[i]->type, "Call")) {
+				char* return_type = check_function_write_value(n->children[i]->children[0]->value);
+				if (!check_return_type(return_type)) {
+					printf("Line %d, col %d: Cannot write values of type %s\n", symbol_line, symbol_col, return_type);
+					exit(0);
+				}
+			}
+			else {
+				if (!check_write_value(name, n->children[i]->type)) {
+					printf("Line %d, col %d: Cannot write values of type %s\n", symbol_line, symbol_col, name);
+					exit(0);
 				}
 			}
 		}
