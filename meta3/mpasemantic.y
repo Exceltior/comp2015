@@ -509,6 +509,53 @@ char check_assignment(node* a, node *b) {
 	return 0;
 }
 
+char* get_argument_type(char* name, int index) {
+	name = str_to_lower(name);
+	symbol* first;
+	int j=0, i=0;
+	while(table[i] != NULL) {
+		if (!strcmp(table[i]->name, "Function")) {
+			first = table[i]->first;
+			if (!strcmp(first->name, name)) {
+				while (first != NULL) {
+					if (first->flag != NULL) {
+						if ((!strcmp(first->flag, "param")) || (!strcmp(first->flag, "varparam"))) {
+							j++;
+							if (j == index) {
+								return first->type;
+							}
+						}
+					}
+					first = first->next;
+				}
+			}
+		}
+		i++;
+	}
+}
+
+char* get_symbol_type(char* name) {
+	name = str_to_lower(name);
+	symbol* first = table[cur_table_index]->first;
+	while(first != NULL) {
+		if (!strcmp(first->name, name)) {
+			return first->type;
+		}
+		first = first->next;
+	}
+	first = table[2]->first;
+	while(first != NULL) {
+		if (!strcmp(first->name, name)) {
+			if (!strcmp(first->type, "function")) {
+				return get_function_return_type(first->name);
+			}
+			return first->type;
+		}
+		first = first->next;
+	}
+	return NULL;
+}
+
 void insert_symbol(symbol_table* st, char* name, char* type, char* flag, char* value) {
 	name = str_to_lower(name);
 	type = str_to_lower(type);
@@ -727,6 +774,28 @@ char build_table(node* n) {
 					printf("Line %d, col %d: Wrong number of arguments in call to function %s (got %d, expected %d)\n", symbol_line, symbol_col, name, n->n_children-1, expected);
 					exit(0);
 				}
+				if (n->n_children > 0) {
+					for (i=1;i<n->n_children;i++) {
+						char* arg_type = get_argument_type(name, i);
+						char* cur_arg_type;
+						if (!strcmp(n->children[i]->type, "Call")) {
+							cur_arg_type = get_symbol_type(n->children[i]->children[0]->value);
+						}
+						else if (!strcmp(n->children[i]->type, "Id")) {
+							cur_arg_type = get_symbol_type(n->children[i]->value);
+						}
+						//TODO EXPRESSIONS
+						else break;
+						symbol_line = n->children[i]->line;
+						symbol_col = n->children[i]->col;
+						if ((arg_type != NULL) && (cur_arg_type != NULL)) {
+							if (strcmp(arg_type, cur_arg_type)) {
+								printf("Line %d, col %d: Incompatible type for argument %d in call to function %s (got %s, expected %s)\n", symbol_line, symbol_col, i+1, name, cur_arg_type, arg_type);
+								exit(0);
+							}
+						}
+					}
+				}
 			}
 		}
 	}
@@ -747,6 +816,14 @@ char build_table(node* n) {
 				}
 			}
 			else if (!strcmp(n->children[i]->type, "Id")) {
+				if(!check_defined_on_table(name, 2)) {
+					printf("Line %d, col %d: Symbol %s not defined\n", (int)n->children[0]->line, (int)n->children[0]->col, (char*)n->children[0]->value);
+					exit(0);
+				}
+				if(!check_defined_on_table(name, cur_table_index)) {
+					printf("Line %d, col %d: Symbol %s not defined\n", (int)n->children[0]->line, (int)n->children[0]->col, (char*)n->children[0]->value);
+					exit(0);
+				}
 				char* write_type = check_write_value(name, n->children[i]->type);
 				if (write_type != NULL) {
 					if (strcmp(write_type, "integer") && (strcmp(write_type, "real")) && (strcmp(write_type, "boolean"))) {
