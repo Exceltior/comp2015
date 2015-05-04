@@ -362,7 +362,7 @@ char check_write_value(char* name, char* type) {
 	return 0;
 }
 
-char* check_function_write_value(char* name) {
+char* get_function_return_type(char* name) {
 	int i = 0, n = 0;
 	symbol* first;
 	name = str_to_lower(name);
@@ -389,6 +389,100 @@ char check_return_type(char* type) {
 			return 1;
 		first = first->next;
 	}
+	return 0;
+}
+
+char check_assignment(node* a, node *b) {
+	char* type_a = a->type, *type_b = b->type;
+	char* name_a = str_to_lower(a->value), *name_b = str_to_lower(b->value);
+	char* var_type_a = strdup("");
+	char* var_type_b = strdup("");
+
+	symbol* first;
+	if (!strcmp(type_b, "Id")) {
+		first = table[cur_table_index]->first;
+		while (first != NULL) {
+			if (!strcmp(first->name, name_a)) {
+				var_type_a = first->type;
+			}
+			if (!strcmp(first->name, name_b)) {
+				var_type_b = first->type;
+			}
+			first = first->next;
+		}
+		first = table[2]->first;
+		while (first != NULL) {
+			if (!strcmp(first->name, name_a)) {
+				var_type_a = first->type;
+			}
+			if (!strcmp(first->name, name_b)) {
+				var_type_b = first->type;
+			}
+			first = first->next;
+		}
+		if (!strcmp(var_type_a, "function")) {
+			var_type_a = get_function_return_type(name_a);
+		}
+		if (!strcmp(var_type_a, var_type_b)) {
+			return 1;
+		}
+	}
+	else if (!strcmp(type_b, "Call")) {
+		char* function_name = b->children[0]->value;
+		var_type_b = get_function_return_type(function_name);
+		first = table[cur_table_index]->first;
+		while (first != NULL) {
+			if (!strcmp(first->name, name_a)) {
+				var_type_a = first->type;
+			}
+			first = first->next;
+		}
+		first = table[2]->first;
+		while (first != NULL) {
+			if (!strcmp(first->name, name_a)) {
+				var_type_a = first->type;
+			}
+			first = first->next;
+		}
+		if (!strcmp(var_type_a, "function")) {
+			var_type_a = get_function_return_type(name_a);
+		}
+		if (!strcmp(var_type_a, var_type_b)) {
+			return 1;
+		}
+	}
+	else {
+		/*type_b = b->children[0]->type;
+		name_b = str_to_lower(b->children[0]->value);
+		first = table[cur_table_index]->first;
+		while (first != NULL) {
+			if (!strcmp(first->name, name_a)) {
+				var_type_a = first->type;
+			}
+			if (!strcmp(first->name, name_b)) {
+				var_type_b = first->type;
+			}
+			first = first->next;
+		}
+		first = table[2]->first;
+		while (first != NULL) {
+			if (!strcmp(first->name, name_a)) {
+				var_type_a = first->type;
+			}
+			if (!strcmp(first->name, name_b)) {
+				var_type_b = first->type;
+			}
+			first = first->next;
+		}
+		if (!strcmp(var_type_a, "function")) {
+			var_type_a = get_function_return_type(name_a);
+		}
+		printf("%s %s %s\n", type_b, name_b, var_type_b);
+		if (!strcmp(var_type_a, var_type_b)) {
+			return 1;
+		}*/
+	}
+	printf("Line %d, col %d: Incompatible type in assigment to %s (got _%s_, expected _%s_)\n", a->line, a->col, name_a, var_type_b ,var_type_a);
 	return 0;
 }
 
@@ -606,18 +700,23 @@ char build_table(node* n) {
 			symbol_line = n->children[i]->line;
 			symbol_col = n->children[i]->col;
 			if (!strcmp(n->children[i]->type, "Call")) {
-				char* return_type = check_function_write_value(n->children[i]->children[0]->value);
+				char* return_type = get_function_return_type(n->children[i]->children[0]->value);
 				if (!check_return_type(return_type)) {
-					printf("Line %d, col %d: Cannot write values of type %s\n", symbol_line, symbol_col, return_type);
+					printf("Line %d, col %d: Cannot write values of type _%s_\n", symbol_line, symbol_col, return_type);
 					exit(0);
 				}
 			}
 			else {
 				if (!check_write_value(name, n->children[i]->type)) {
-					printf("Line %d, col %d: Cannot write values of type %s\n", symbol_line, symbol_col, name);
+					printf("Line %d, col %d: Cannot write values of type _%s_\n", symbol_line, symbol_col, name);
 					exit(0);
 				}
 			}
+		}
+	}
+	else if (!strcmp(n->type, "Assign")) {
+		if (!check_assignment(n->children[0], n->children[1])) {
+			exit(0);
 		}
 	}
 	for (i=0;i<n->n_children;i++) {
