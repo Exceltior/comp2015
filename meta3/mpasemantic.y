@@ -318,6 +318,38 @@ char check_function_identifier(char* name) {
 	return 0;
 }
 
+char check_number_of_arguments(char* name, int n_args) {
+	int i = 0, n = 0;
+	symbol* first;
+	name = str_to_lower(name);
+	while(table[i] != NULL) {
+		if (!strcmp(table[i]->name, "Function")) {
+			first = table[i]->first;
+			if (!strcmp(first->name, name)) {
+				while (first != NULL) {
+					if ((!strcmp(first->flag, "param")) || (!strcmp(first->flag, "varparam")))
+						n++;
+					first = first->next;
+				}
+				return n;
+			}
+		}
+		i++;
+	}
+	return 0;
+}
+
+char check_write_value(char* name) {
+	name = str_to_lower(name);
+	symbol* first = table[cur_table_index]->first;
+	while(first != NULL) {
+		if (!strcmp(first->name, name))
+			return 1;
+		first = first->next;
+	}
+	return 0;
+}
+
 void insert_symbol(symbol_table* st, char* name, char* type, char* flag, char* value) {
 	name = str_to_lower(name);
 	type = str_to_lower(type);
@@ -507,6 +539,35 @@ char build_table(node* n) {
 			else {
 				printf("Line %d, col %d: Symbol %s already defined\n", (int)n->children[i]->line, (int)n->children[i]->col, (char*)n->children[i]->value);
 				exit(0);
+			}
+		}
+	}
+	else if (!strcmp(n->type, "Call")) {
+		if (n->n_children > 0) {
+			char* name = n->children[0]->value;
+			if (name != NULL) {
+				int expected = check_number_of_arguments(name, n->n_children-1);
+				symbol_line = n->children[0]->line;
+				symbol_col = n->children[0]->col;
+				if (expected != n->n_children-1) {
+					printf("Line %d, col %d: Wrong number of arguments in call to function %s (got %d, expected %d)\n", symbol_line, symbol_col, name, n->n_children-1, expected);
+					exit(0);
+				}
+			}
+		}
+	}
+	else if (!strcmp(n->type, "WriteLn")) {
+		if (n->n_children > 0) {
+			char* name = n->children[0]->value;
+			if (name != NULL) {
+				symbol_line = n->children[0]->line;
+				symbol_col = n->children[0]->col;
+				if (!strcmp(n->children[0]->type, "Id")) {
+					if (!check_write_value(name)) {
+						printf("Line %d, col %d: Cannot write values of type %s\n", symbol_line, symbol_col, name);
+						exit(0);
+					}
+				}
 			}
 		}
 	}
