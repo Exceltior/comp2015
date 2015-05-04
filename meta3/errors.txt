@@ -9,4 +9,4 @@ Symbol <token> already defined - DONE
 Symbol <token> not defined - DONE
 Type identifier expected - DONE
 Variable identifier expected
-Wrong number of arguments in call to function <token> (got <type>, expected <type>)
+Wrong number of arguments in call to function <token> (got <type>, expected <type>) - DOING

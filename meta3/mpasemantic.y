@@ -392,9 +392,9 @@ char build_table(node* n) {
 	else if (!strcmp(n->type, "FuncDef2")) {
 		int index = -1;
 		i = 0;
+		symbol_line = n->children[0]->line;
+		symbol_col = n->children[0]->col;
 		if (!check_function_identifier(n->children[0]->value)) {
-			symbol_line = n->children[0]->line;
-			symbol_col = n->children[0]->col;
 			printf("Line %d, col %d: Function identifier expected\n", symbol_line, symbol_col);
 			exit(0);
 		}
@@ -409,7 +409,8 @@ char build_table(node* n) {
 			cur_table_index = index;
 		}
 		else {
-			/*TODO ERRORS*/
+			printf("Line %d, col %d: Function identifier expected\n", symbol_line, symbol_col);
+			exit(0);
 		}
 	}
     //New error checkings for VarDecl
