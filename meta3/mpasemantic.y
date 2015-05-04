@@ -738,11 +738,13 @@ char build_table(node* n) {
 			symbol_line = n->children[i]->line;
 			symbol_col = n->children[i]->col;
 			if (!strcmp(n->children[i]->type, "Call")) {
-				/*char* return_type = get_function_return_type(n->children[i]->children[0]->value);
-				if (!check_write_value(return_type)) {
-					printf("Line %d, col %d: Cannot write values of type _%s_\n", symbol_line, symbol_col, return_type);
-					exit(0);
-				}*/
+				char* return_type = get_function_return_type(n->children[i]->children[0]->value);
+				if (return_type != NULL) {
+					if (strcmp(return_type, "integer") && (strcmp(return_type, "real")) && (strcmp(return_type, "boolean"))) {
+						printf("Line %d, col %d: Cannot write values of type _%s_\n", symbol_line, symbol_col, return_type);
+						exit(0);
+					}
+				}
 			}
 			else if (!strcmp(n->children[i]->type, "Id")) {
 				char* write_type = check_write_value(name, n->children[i]->type);
