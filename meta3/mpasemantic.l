@@ -28,8 +28,8 @@ string                                              '(''|[^'\n])*'
 <COMMENT>\n                                         {col = 1;}
 <COMMENT><<EOF>>                                    {BEGIN(0); {printf("Line %d, col %d: unterminated comment\n", auxLine, auxCol);}}
 
-{int}                                               {col+=yyleng; yylval.intlit = (char*)strdup(yytext); return INTLIT;}
-{reallit}   					                    {col+=yyleng; yylval.reallit = (char*)strdup(yytext); return REALLIT;}
+{int}                                               {yylval.intlit = (char*)strdup(yytext); return INTLIT;}
+{reallit}   					                    {yylval.reallit = (char*)strdup(yytext); return REALLIT;}
 {string}                                            {yylval.string = (char*)strdup(yytext); return STRING;}
 '(''|[^'\n])*                                       {printf("Line %d, col %d: unterminated string\n", yylineno, col);}
 

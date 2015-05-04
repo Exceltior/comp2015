@@ -561,44 +561,49 @@ char is_expression(char* type) {
 	return 0;
 }
 
-char check_unary_operator(node* n) {
-	node* c = n->children[0];
+char* get_type(node* c) {
 	char* type;
-	if (c->value == NULL)
-		return 1;
 	if (!strcmp(c->type, "Id")) {
 		type = get_symbol_type(c->value);
 	}
 	else if (!strcmp(c->type, "Call")) {
-		return 1;
+		type = get_function_return_type(c->children[0]->value);
 	}
-	else if (!strcmp(c->value, "IntLit")) {
+	else if (!strcmp(c->type, "IntLit")) {
 		type = strdup("integer");
 	}
-	else if (!strcmp(c->value, "RealLit")) {
+	else if (!strcmp(c->type, "RealLit")) {
 		type = strdup("real");
 	}
-	else if (!strcmp(c->value, "String")) {
+	else if (!strcmp(c->type, "String")) {
 		type = strdup("string");
 	}
 	if ((!strcmp(c->value, "false")) || (!strcmp(c->value, "true"))) {
 		type = strdup("boolean");
 	}
+	return type;
+}
+
+char check_unary_operator(node* n) {
+	node* c = n->children[0];
+	char* type;
+	if (c->value == NULL)
+		return 1;
+	type = get_type(c);
 	if (type == NULL)
 		return 1;
+
 	if ((!strcmp(n->type, "Minus")) || (!strcmp(n->type, "Plus"))) {
 		if ((!strcmp(type, "integer")) || (!strcmp(type, "real"))) {
 			return 1;
 		}
 		else {
-			printf("Line %d, col %d: Operator ", n->line, n->col);
 			if (!strcmp(n->type, "Minus")) {
-				printf("-");
+				printf("Line %d, col %d: Operator - cannot be applied to type _%s_\n", n->line, n->col, type);
 			}
 			else {
-				printf("+");
+				printf("Line %d, col %d: Operator + cannot be applied to type _%s_\n", n->line, n->col, type);
 			}
-			printf(" cannot be applied to type _%s_\n", type);
 			return 0;
 		}
 	}
@@ -614,6 +619,72 @@ char check_unary_operator(node* n) {
 }
 
 char check_normal_operator(node* n) {
+	node* a = n->children[0];
+	node* b = n->children[1];
+	if (a->value == NULL)
+		return 1;
+	if (b->value == NULL)
+		return 1;
+	char* a_type = get_type(a);
+	char* b_type = get_type(b);
+	if (a_type == NULL)
+		return 1;
+	if (b_type == NULL)
+		return 1;
+	if (!strcmp(n->type, "Mod")) {
+		if ((!strcmp(a_type, "real")) || (!strcmp(b_type, "real")) || (!strcmp(a_type, "boolean")) || (!strcmp(b_type, "boolean"))) {
+			printf("Line %d, col %d: Operator Mod cannot be applied to types _%s_, _%s_\n", n->line, n->col, a_type, b_type);
+			return 0;
+		}
+	}
+	else if ((!strcmp(a_type, "boolean")) || (!strcmp(b_type, "boolean"))) {
+		if ((!strcmp(n->type, "And")) || (!strcmp(n->type, "Or")) || (!strcmp(n->type, "Eq")) || (!strcmp(n->type, "Neq"))) {
+			return 1;
+		}
+		else {
+			if (!strcmp(n->type, "Add")) {
+				printf("Line %d, col %d: Operator + cannot be applied to types _%s_, _%s_\n", n->line, n->col, a_type, b_type);
+			}
+			else if (!strcmp(n->type, "Sub")) {
+				printf("Line %d, col %d: Operator - cannot be applied to types _%s_, _%s_\n", n->line, n->col, a_type, b_type);
+			}
+			else if (!strcmp(n->type, "Mul")) {
+				printf("Line %d, col %d: Operator * cannot be applied to types _%s_, _%s_\n", n->line, n->col, a_type, b_type);
+			}
+			else if (!strcmp(n->type, "Div")) {
+				printf("Line %d, col %d: Operator div cannot be applied to types _%s_, _%s_\n", n->line, n->col, a_type, b_type);
+			}
+			else if (!strcmp(n->type, "RealDiv")) {
+				printf("Line %d, col %d: Operator / cannot be applied to types _%s_, _%s_\n", n->line, n->col, a_type, b_type);
+			}
+			else if (!strcmp(n->type, "Mod")) {
+				printf("Line %d, col %d: Operator mod cannot be applied to types _%s_, _%s_\n", n->line, n->col, a_type, b_type);
+			}
+			else if (!strcmp(n->type, "Leq")) {
+				printf("Line %d, col %d: Operator <= cannot be applied to types _%s_, _%s_\n", n->line, n->col, a_type, b_type);
+			}
+			else if (!strcmp(n->type, "Geq")) {
+				printf("Line %d, col %d: Operator >= cannot be applied to types _%s_, _%s_\n", n->line, n->col, a_type, b_type);
+			}
+			else if (!strcmp(n->type, "Gt")) {
+				printf("Line %d, col %d: Operator > cannot be applied to types _%s_, _%s_\n", n->line, n->col, a_type, b_type);
+			}
+			else if (!strcmp(n->type, "Lt")) {
+				printf("Line %d, col %d: Operator < cannot be applied to types _%s_, _%s_\n", n->line, n->col, a_type, b_type);
+			}
+			return 0;
+		}
+	}
+	else if ((!strcmp(a_type, "string")) || (!strcmp(b_type, "string")) || (!strcmp(a_type, "integer")) || (!strcmp(b_type, "integer")) || (!strcmp(a_type, "real")) || (!strcmp(b_type, "real"))) {
+		if (!strcmp(n->type, "And")) {
+			printf("Line %d, col %d: Operator and cannot be applied to types _%s_, _%s_\n", n->line, n->col, a_type, b_type);
+			return 0;
+		}
+		else if (!strcmp(n->type, "Or")) {
+			printf("Line %d, col %d: Operator or cannot be applied to types _%s_, _%s_\n", n->line, n->col, a_type, b_type);
+			return 0;
+		}
+	}
 	return 1;
 }
 
@@ -877,14 +948,10 @@ char build_table(node* n) {
 				}
 			}
 			else if (!strcmp(n->children[i]->type, "Id")) {
-				/*if(!check_defined_on_table(name, 2)) {
-					printf("Line %d, col %d: Symbol %s not defined\n", (int)n->children[0]->line, (int)n->children[0]->col, (char*)n->children[0]->value);
+				if (!check_global_ids(name)) {
+					printf("Line %d, col %d: Symbol %s not defined\n", (int)n->children[i]->line, (int)n->children[i]->col, (char*)n->children[i]->value);
 					exit(0);
-				}*/
-				/*if(!check_defined_on_table(name, cur_table_index)) {
-					printf("Line %d, col %d: Symbol %s not defined\n", (int)n->children[0]->line, (int)n->children[0]->col, (char*)n->children[0]->value);
-					exit(0);
-				}*/
+				}
 				char* write_type = check_write_value(name, n->children[i]->type);
 				if (write_type != NULL) {
 					if (strcmp(write_type, "integer") && (strcmp(write_type, "real")) && (strcmp(write_type, "boolean"))) {
