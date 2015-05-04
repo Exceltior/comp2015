@@ -306,6 +306,27 @@ char check_function_identifier(char* name) {
 	return 0;
 }
 
+char check_number_of_arguments(char* name, int n_args) {
+	int i = 0, n = 0;
+	symbol* first;
+	name = str_to_lower(name);
+	while(table[i] != NULL) {
+		if (!strcmp(table[i]->name, "Function")) {
+			first = table[i]->first;
+			if (!strcmp(first->name, name)) {
+				while (first != NULL) {
+					if (!strcmp(first->flag, "param"))
+						n++;
+					first = first->next;
+				}
+				return n;
+			}
+		}
+		i++;
+	}
+	return 0;
+}
+
 void insert_symbol(symbol_table* st, char* name, char* type, char* flag, char* value) {
 	name = str_to_lower(name);
 	type = str_to_lower(type);
@@ -438,18 +459,24 @@ char build_table(node* n) {
 	}
 	else if (!strcmp(n->type, "Params")) {
 		symbol_type = n->children[n->n_children-1]->value;
-		symbol_line = n->children[n->n_children-1]->line;
-		symbol_col = n->children[n->n_children-1]->col;
 		for (i=0;i<n->n_children-1;i++) {
 			insert_symbol(table[cur_table_index], n->children[i]->value, symbol_type, "param", NULL);
 		}
 	}
 	else if (!strcmp(n->type, "VarParams")) {
 		symbol_type = n->children[n->n_children-1]->value;
-		symbol_line = n->children[n->n_children-1]->line;
-		symbol_col = n->children[n->n_children-1]->col;
 		for (i=0;i<n->n_children-1;i++) {
 			insert_symbol(table[cur_table_index], n->children[i]->value, symbol_type, "varparam", NULL);
+		}
+	}
+	else if (!strcmp(n->type, "Call")) {
+		char* name = n->children[0]->value;
+		int expected = check_number_of_arguments(name, n->n_children-1);
+		symbol_line = n->children[0]->line;
+		symbol_col = n->children[0]->col;
+		if (expected != n->n_children-1) {
+			printf("Line %d, col %d: Wrong number of arguments in call to function %s (got %d, expected %d)\n", symbol_line, symbol_col, name, n->n_children-1, expected);
+			exit(0);
 		}
 	}
 	for (i=0;i<n->n_children;i++) {
