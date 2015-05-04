@@ -231,6 +231,18 @@ char check_already_defined(char* name) {
 	return 0;
 }
 
+char check_defined_on_table(char *name, int table_ind) {
+	name = str_to_lower(name);
+	symbol* first = table[table_ind]->first;
+	while(first != NULL) {
+		if (!strcmp(first->name, name)) {
+			return 1;
+		}
+		first = first->next;
+	}
+	return 0;
+}
+
 //Check if id exists and is type on current scope, program scope and outer scope
 char check_global_types(char *type) {
     type = str_to_lower(type);
@@ -381,8 +393,24 @@ char build_table(node* n) {
 	else if ((!strcmp(n->type, "FuncDef")) || (!strcmp(n->type, "FuncDecl"))) {
 		symbol_type = n->children[2]->value;
 		symbol_line = n->children[2]->line;
+		//Check function return type		
 		symbol_col = n->children[2]->col;
-		insert_symbol(table[2], n->children[0]->value, "function", NULL, NULL);
+		if (!check_global_ids(symbol_type)) {
+            printf("Line %d, col %d: Symbol %s not defined\n", symbol_line, symbol_col, symbol_type);
+            exit(0);
+        }
+        else if (!check_global_types(symbol_type)) {
+            printf("Line %d, col %d: Type identifier expected\n", symbol_line, symbol_col);
+            exit(0);
+        }
+		//Check function name
+		if (!check_defined_on_table(n->children[0]->value, 2)) {
+			insert_symbol(table[2], n->children[0]->value, "function", NULL, NULL);
+		}
+		else {
+			printf("Line %d, col %d: Symbol %s already defined\n", (int)n->children[0]->line, (int)n->children[0]->col, (char*)n->children[0]->value);
+			exit(0);
+		}		
 		while(table[cur_table_index] != NULL) {
 			cur_table_index++;
 		}
@@ -440,16 +468,46 @@ char build_table(node* n) {
 		symbol_type = n->children[n->n_children-1]->value;
 		symbol_line = n->children[n->n_children-1]->line;
 		symbol_col = n->children[n->n_children-1]->col;
+		//Check types
+		if (!check_global_ids(symbol_type)) {
+            printf("Line %d, col %d: Symbol %s not defined\n", symbol_line, symbol_col, symbol_type);
+            exit(0);
+        }
+        else if (!check_global_types(symbol_type)) {
+            printf("Line %d, col %d: Type identifier expected\n", symbol_line, symbol_col);
+            exit(0);
+        }
 		for (i=0;i<n->n_children-1;i++) {
-			insert_symbol(table[cur_table_index], n->children[i]->value, symbol_type, "param", NULL);
+			if(!check_already_defined(n->children[i]->value)) {			
+				insert_symbol(table[cur_table_index], n->children[i]->value, symbol_type, "param", NULL);
+			}	
+			else {
+				printf("Line %d, col %d: Symbol %s already defined\n", (int)n->children[i]->line, (int)n->children[i]->col, (char*)n->children[i]->value);
+				exit(0);
+			}		
 		}
 	}
 	else if (!strcmp(n->type, "VarParams")) {
 		symbol_type = n->children[n->n_children-1]->value;
 		symbol_line = n->children[n->n_children-1]->line;
 		symbol_col = n->children[n->n_children-1]->col;
+		//Check types
+		if (!check_global_ids(symbol_type)) {
+            printf("Line %d, col %d: Symbol %s not defined\n", symbol_line, symbol_col, symbol_type);
+            exit(0);
+        }
+        else if (!check_global_types(symbol_type)) {
+            printf("Line %d, col %d: Type identifier expected\n", symbol_line, symbol_col);
+            exit(0);
+        }		
 		for (i=0;i<n->n_children-1;i++) {
-			insert_symbol(table[cur_table_index], n->children[i]->value, symbol_type, "varparam", NULL);
+			if(!check_already_defined(n->children[i]->value)) {			
+				insert_symbol(table[cur_table_index], n->children[i]->value, symbol_type, "varparam", NULL);
+			}			
+			else {
+				printf("Line %d, col %d: Symbol %s already defined\n", (int)n->children[i]->line, (int)n->children[i]->col, (char*)n->children[i]->value);
+				exit(0);
+			}
 		}
 	}
 	for (i=0;i<n->n_children;i++) {
