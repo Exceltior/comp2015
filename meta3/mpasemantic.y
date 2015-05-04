@@ -467,6 +467,7 @@ char check_assignment(node* a, node *b) {
 		}
 	}
 	else {
+		return 1;
 		/*type_b = b->children[0]->type;
 		name_b = str_to_lower(b->children[0]->value);
 		first = table[cur_table_index]->first;
@@ -730,6 +731,7 @@ char build_table(node* n) {
 			symbol_line = n->children[i]->line;
 			symbol_col = n->children[i]->col;
 			if (!strcmp(n->children[i]->type, "Call")) {
+				//ver se a funcao existe, symbol not defined
 				char* return_type = get_function_return_type(n->children[i]->children[0]->value);
 				if (!check_return_type(return_type)) {
 					printf("Line %d, col %d: Cannot write values of type _%s_\n", symbol_line, symbol_col, return_type);
@@ -744,11 +746,11 @@ char build_table(node* n) {
 			}
 		}
 	}
-	else if (!strcmp(n->type, "Assign")) {
+	/*else if (!strcmp(n->type, "Assign")) {
 		if (!check_assignment(n->children[0], n->children[1])) {
 			exit(0);
 		}
-	}
+	}*/
 	for (i=0;i<n->n_children;i++) {
 		build_table(n->children[i]);
 	}
