@@ -834,11 +834,19 @@ char build_table(node* n) {
 			}
 		}
 	}
-	/*else if (!strcmp(n->type, "Assign")) {
-		if (!check_assignment(n->children[0], n->children[1])) {
+	else if (!strcmp(n->type, "Assign")) {
+		/*if (!check_assignment(n->children[0], n->children[1])) {
+			exit(0);
+		}*/
+		if(check_defined_on_table(n->children[0]->value, 0) || check_function_identifier(n->children[0]->value)) {
+			printf("Line %d, col %d: Variable identifier expected\n", n->children[0]->line, n->children[0]->col);
+			exit(0); 
+		}
+		if(!check_global_ids(n->children[0]->value)) {
+			printf("Line %d, col %d: Symbol %s not defined\n", n->children[0]->line, n->children[0]->col, n->children[0]->value);
 			exit(0);
 		}
-	}*/
+	}
 	for (i=0;i<n->n_children;i++) {
 		build_table(n->children[i]);
 	}
