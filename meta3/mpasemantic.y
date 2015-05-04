@@ -40,13 +40,15 @@ node* create_terminal(char* type, int line, int col, int used, void* value) {
 	return n;
 }
 
-node* create_node(char* type, int used, int n_children, ...) {
+node* create_node(char* type, int line, int col, int used, int n_children, ...) {
 	va_list args;
 	va_start(args, n_children);
 	register int i = 0, j, c = 0;
 
 	node* parent = new_node(type, NULL);
 	parent->used = used;
+	parent->line = line;
+	parent->col = col;
 	parent->children = (node**)malloc(sizeof(node)*n_children);
 	parent->n_children = n_children;
 
@@ -106,28 +108,28 @@ node* create_ifelse(node* a, node* b, node* c) {
 	if ((!strcmp(c->type, "Empty")) || ((!strcmp(c->type, "Stat")) && (c->n_children == 0))) {
 		c = create_terminal("StatList", yylineno, col-yyleng, 1, NULL);
 	}
-	return create_node("IfElse", 1, 3, a, b, c);
+	return create_node("IfElse", yylineno, col-yyleng, 1, 3, a, b, c);
 }
 
 node* create_repeat(node *a, node *b) {
 	if ((!strcmp(a->type, "Empty")) || ((!strcmp(a->type, "StatList")) && (a->n_children == 0))) {
 		a  = create_terminal("StatList", yylineno, col-yyleng, 1, NULL);
 	}
-	return create_node("Repeat", 1, 2, a, b);
+	return create_node("Repeat", yylineno, col-yyleng, 1, 2, a, b);
 }
 
 node* create_while(node *a, node *b) {
 	if ((!strcmp(b->type, "Empty")) || ((b->n_children == 0))) {
 		b  = create_terminal("StatList", yylineno, col-yyleng, 1, NULL);
 	}
-	return create_node("While", 1, 2, a, b);
+	return create_node("While", yylineno, col-yyleng, 1, 2, a, b);
 }
 
 node* create_funcblock(node *a, node* b) {
 	if ((!strcmp(b->type, "StatPart")) && (b->n_children == 0)) {
 		b = create_terminal("StatList", yylineno, col-yyleng, 1, NULL);
 	}
-	create_node("FuncBlock", 0, 2, a, b);
+	create_node("FuncBlock", yylineno, col-yyleng, 0, 2, a, b);
 }
 
 void print_node(node* n, int depth) {
@@ -138,7 +140,7 @@ void print_node(node* n, int depth) {
 		ident[i] = '.';
 	}
 
-	printf("%s", ident);
+	printf("%s %d %d ", ident, n->line, n->col);
 	if (!strcmp(n->type, "Id")) {
 		printf("%s(%s)\n", n->type, (char*)n->value);
 	}
@@ -160,7 +162,7 @@ void print_node(node* n, int depth) {
 	}
 }
 
-/*sematic*/
+/*semantic*/
 typedef struct symbol {
 	char* name;
 	char* type;
@@ -408,12 +410,6 @@ char check_function(char* name) {
 	return 0;
 }
 
-char check_return_type(char* type) {
-	if (type == NULL)
-		return 0;
-	return 0;
-}
-
 char check_assignment(node* a, node *b) {
 	char* type_a = a->type, *type_b = b->type;
 	char* name_a = str_to_lower(a->value), *name_b = str_to_lower(b->value);
@@ -475,37 +471,8 @@ char check_assignment(node* a, node *b) {
 	}
 	else {
 		return 1;
-		/*type_b = b->children[0]->type;
-		name_b = str_to_lower(b->children[0]->value);
-		first = table[cur_table_index]->first;
-		while (first != NULL) {
-			if (!strcmp(first->name, name_a)) {
-				var_type_a = first->type;
-			}
-			if (!strcmp(first->name, name_b)) {
-				var_type_b = first->type;
-			}
-			first = first->next;
-		}
-		first = table[2]->first;
-		while (first != NULL) {
-			if (!strcmp(first->name, name_a)) {
-				var_type_a = first->type;
-			}
-			if (!strcmp(first->name, name_b)) {
-				var_type_b = first->type;
-			}
-			first = first->next;
-		}
-		if (!strcmp(var_type_a, "function")) {
-			var_type_a = get_function_return_type(name_a);
-		}
-		printf("%s %s %s\n", type_b, name_b, var_type_b);
-		if (!strcmp(var_type_a, var_type_b)) {
-			return 1;
-		}*/
 	}
-	printf("Line %d, col %d: Incompatible type in assigment to %s (got _%s_, expected _%s_)\n", a->line, a->col, name_a, var_type_b ,var_type_a);
+	printf("Line %d, col %d: Incompatible type in assigment to %s (got _%s_, expected _%s_)\n", b->line, b->col, name_a, var_type_b ,var_type_a);
 	return 0;
 }
 
@@ -554,6 +521,89 @@ char* get_symbol_type(char* name) {
 		first = first->next;
 	}
 	return NULL;
+}
+
+char is_expression(char* type) {
+	if (!strcmp(type, "Add"))
+		return 1;
+	if (!strcmp(type, "Sub"))
+		return 1;
+	if (!strcmp(type, "Or"))
+		return 1;
+	if (!strcmp(type, "Minus"))
+		return 1;
+	if (!strcmp(type, "Plus"))
+		return 1;
+	if (!strcmp(type, "RealDiv"))
+		return 1;
+	if (!strcmp(type, "Mul"))
+		return 1;
+	if (!strcmp(type, "And"))
+		return 1;
+	if (!strcmp(type, "Div"))
+		return 1;
+	if (!strcmp(type, "Mod"))
+		return 1;
+	if (!strcmp(type, "Not"))
+		return 1;
+	if (!strcmp(type, "Leq"))
+		return 1;
+	if (!strcmp(type, "Geq"))
+		return 1;
+	if (!strcmp(type, "Gt"))
+		return 1;
+	if (!strcmp(type, "Lt"))
+		return 1;
+	if (!strcmp(type, "Neq"))
+		return 1;
+	if (!strcmp(type, "Eq"))
+		return 1;
+	return 0;
+}
+
+char check_unary_operator(node* n) {
+	node* c = n->children[0];
+	char* type;
+	if (c->value == NULL)
+		return 1;
+	if (!strcmp(c->type, "Id")) {
+		type = get_symbol_type(c->value);
+	}
+	else if (!strcmp(c->type, "Call")) {
+		return 1;
+	}
+	else if (!strcmp(c->value, "IntLit")) {
+		type = strdup("integer");
+	}
+	else if (!strcmp(c->value, "RealLit")) {
+		type = strdup("real");
+	}
+	else if (!strcmp(c->value, "String")) {
+		type = strdup("string");
+	}
+	if ((!strcmp(c->value, "false")) || (!strcmp(c->value, "true"))) {
+		type = strdup("boolean");
+	}
+	if (type == NULL)
+		return 1;
+	if ((!strcmp(n->type, "Minus")) || (!strcmp(n->type, "Plus"))) {
+		if ((!strcmp(type, "boolean")) || (!strcmp(type, "string"))) {
+			printf("Line %d, col %d: Operator ", n->line, n->col);
+			if (!strcmp(n->type, "Minus")) {
+				printf("-");
+			}
+			else {
+				printf("+");
+			}
+			printf(" cannot be applied to type %s\n", type);
+			return 0;
+		}
+		else return 1;
+	}
+}
+
+char check_normal_operator(node* n) {
+	return 1;
 }
 
 void insert_symbol(symbol_table* st, char* name, char* type, char* flag, char* value) {
@@ -774,7 +824,7 @@ char build_table(node* n) {
 					printf("Line %d, col %d: Wrong number of arguments in call to function %s (got %d, expected %d)\n", symbol_line, symbol_col, name, n->n_children-1, expected);
 					exit(0);
 				}
-				if (n->n_children > 0) {
+				/*if (n->n_children > 0) {
 					for (i=1;i<n->n_children;i++) {
 						char* arg_type = get_argument_type(name, i);
 						char* cur_arg_type;
@@ -795,7 +845,7 @@ char build_table(node* n) {
 							}
 						}
 					}
-				}
+				}*/
 			}
 		}
 	}
@@ -816,14 +866,14 @@ char build_table(node* n) {
 				}
 			}
 			else if (!strcmp(n->children[i]->type, "Id")) {
-				if(!check_defined_on_table(name, 2)) {
+				/*if(!check_defined_on_table(name, 2)) {
 					printf("Line %d, col %d: Symbol %s not defined\n", (int)n->children[0]->line, (int)n->children[0]->col, (char*)n->children[0]->value);
 					exit(0);
-				}
-				if(!check_defined_on_table(name, cur_table_index)) {
+				}*/
+				/*if(!check_defined_on_table(name, cur_table_index)) {
 					printf("Line %d, col %d: Symbol %s not defined\n", (int)n->children[0]->line, (int)n->children[0]->col, (char*)n->children[0]->value);
 					exit(0);
-				}
+				}*/
 				char* write_type = check_write_value(name, n->children[i]->type);
 				if (write_type != NULL) {
 					if (strcmp(write_type, "integer") && (strcmp(write_type, "real")) && (strcmp(write_type, "boolean"))) {
@@ -835,16 +885,30 @@ char build_table(node* n) {
 		}
 	}
 	else if (!strcmp(n->type, "Assign")) {
+		if (check_defined_on_table(n->children[0]->value, 0) || check_function_identifier(n->children[0]->value)) {
+			if (strcmp(n->children[0]->value, table[cur_table_index]->first->name)) {
+				printf("Line %d, col %d: Variable identifier expected\n", n->children[0]->line, n->children[0]->col);
+				exit(0);
+			}
+		}
+		if (!check_global_ids(n->children[0]->value)) {
+			printf("Line %d, col %d: Symbol %s not defined\n", n->children[0]->line, n->children[0]->col, n->children[0]->value);
+			exit(0);
+		}
 		/*if (!check_assignment(n->children[0], n->children[1])) {
 			exit(0);
 		}*/
-		if(check_defined_on_table(n->children[0]->value, 0) || check_function_identifier(n->children[0]->value)) {
-			printf("Line %d, col %d: Variable identifier expected\n", n->children[0]->line, n->children[0]->col);
-			exit(0); 
+	}
+	else if (is_expression(n->type)) {
+		if (n->n_children == 1) {
+			if (!check_unary_operator(n)) {
+				exit(0);
+			}
 		}
-		if(!check_global_ids(n->children[0]->value)) {
-			printf("Line %d, col %d: Symbol %s not defined\n", n->children[0]->line, n->children[0]->col, n->children[0]->value);
-			exit(0);
+		else if (n->n_children == 2) {
+			if (!check_normal_operator(n)) {
+				exit(0);
+			}
 		}
 	}
 	for (i=0;i<n->n_children;i++) {
@@ -874,115 +938,115 @@ char build_table(node* n) {
 
 %%
 
-Prog:					ProgHeading SEMIC ProgBlock DOT							{$$ = parsing_tree = create_node("Program", 1, 2, $1, $3);}
+Prog:					ProgHeading SEMIC ProgBlock DOT							{$$ = parsing_tree = create_node("Program", yylineno, col-yyleng, 1, 2, $1, $3);}
 
-ProgHeading: 			PROGRAM IDAux LBRAC OUTPUT RBRAC						{$$=create_node("ProgHeading", 0, 1, $2);}
+ProgHeading: 			PROGRAM IDAux LBRAC OUTPUT RBRAC						{$$=create_node("ProgHeading", yylineno, col-yyleng, 0, 1, $2);}
 
-ProgBlock: 				VarPart FuncPart StatPart								{$$=create_node("ProgHeading", 0, 3, $1, $2, $3);}
+ProgBlock: 				VarPart FuncPart StatPart								{$$=create_node("ProgHeading", yylineno, col-yyleng, 0, 3, $1, $2, $3);}
 
-VarPart: 				VAR VarDeclaration SEMIC VarPartAux						{$$=create_node("VarPart", 1, 2, $2, $4);}
+VarPart: 				VAR VarDeclaration SEMIC VarPartAux						{$$=create_node("VarPart", yylineno, col-yyleng, 1, 2, $2, $4);}
 		|				%empty													{$$=create_terminal("VarPart", yylineno, col-yyleng, 1, NULL);}
 
-VarPartAux: 			VarDeclaration SEMIC VarPartAux							{$$=create_node("VarPartAux", 0, 2, $1, $3);}
+VarPartAux: 			VarDeclaration SEMIC VarPartAux							{$$=create_node("VarPartAux", yylineno, col-yyleng, 0, 2, $1, $3);}
 		|				%empty													{$$=create_terminal("Empty", 0, 0, 0, NULL);}
 
-VarDeclaration: 		IDList COLON IDAux										{$$=create_node("VarDecl", 1, 2, $1, $3);}
+VarDeclaration: 		IDList COLON IDAux										{$$=create_node("VarDecl", yylineno, col-yyleng, 1, 2, $1, $3);}
 
-IDList: 				IDAux IDListAux											{$$=create_node("IDList", 0, 2, $1, $2);}
+IDList: 				IDAux IDListAux											{$$=create_node("IDList", yylineno, col-yyleng, 0, 2, $1, $2);}
 
-IDListAux:				COMMA IDAux IDListAux									{$$=create_node("IDListAux", 0, 2, $2, $3);}
+IDListAux:				COMMA IDAux IDListAux									{$$=create_node("IDListAux", yylineno, col-yyleng, 0, 2, $2, $3);}
 		|				%empty													{$$=create_terminal("Empty", 0, 0, 0, NULL);}
 
-FuncPart:  				FuncDeclaration SEMIC FuncPart							{$$=create_node("FuncPart", 1, 2, $1, $3);}
+FuncPart:  				FuncDeclaration SEMIC FuncPart							{$$=create_node("FuncPart", yylineno, col-yyleng, 1, 2, $1, $3);}
 		|				%empty													{$$=create_terminal("FuncPart", yylineno, col-yyleng, 1, NULL);}
 
-FuncDeclaration: 		FuncHeading SEMIC FORWARD								{$$=create_node("FuncDecl", 1, 1, $1);}
-		|				FuncIdent SEMIC FuncBlock								{$$=create_node("FuncDef2", 1, 2, $1, $3);}
-		|				FuncHeading SEMIC FuncBlock								{$$=create_node("FuncDef", 1, 2, $1, $3);}
+FuncDeclaration: 		FuncHeading SEMIC FORWARD								{$$=create_node("FuncDecl", yylineno, col-yyleng, 1, 1, $1);}
+		|				FuncIdent SEMIC FuncBlock								{$$=create_node("FuncDef2", yylineno, col-yyleng, 1, 2, $1, $3);}
+		|				FuncHeading SEMIC FuncBlock								{$$=create_node("FuncDef", yylineno, col-yyleng, 1, 2, $1, $3);}
 
 
-FuncHeading: 			FUNCTION IDAux FuncHeadingAux COLON IDAux				{$$=create_node("FuncHeading", 0, 3, $2, $3, $5);}
+FuncHeading: 			FUNCTION IDAux FuncHeadingAux COLON IDAux				{$$=create_node("FuncHeading", yylineno, col-yyleng, 0, 3, $2, $3, $5);}
 
-FuncHeadingAux:			FormalParamList											{$$=create_node("FuncHeadingAux", 0, 1, $1);}
+FuncHeadingAux:			FormalParamList											{$$=create_node("FuncHeadingAux", yylineno, col-yyleng, 0, 1, $1);}
 		|				%empty													{$$=create_terminal("FuncParams", yylineno, col-yyleng, 1, NULL);}
 
-FuncIdent:				FUNCTION IDAux											{$$=create_node("FuncIdent", 0, 1, $2);}
+FuncIdent:				FUNCTION IDAux											{$$=create_node("FuncIdent", yylineno, col-yyleng, 0, 1, $2);}
 
-FormalParamList: 		LBRAC FormalParams FormalParamListAux RBRAC 			{$$=create_node("FuncParams", 1, 2, $2, $3);}
+FormalParamList: 		LBRAC FormalParams FormalParamListAux RBRAC 			{$$=create_node("FuncParams", yylineno, col-yyleng, 1, 2, $2, $3);}
 
-FormalParamListAux: 	SEMIC FormalParams FormalParamListAux					{$$=create_node("FormalParamListAux", 0, 2, $2, $3);}
+FormalParamListAux: 	SEMIC FormalParams FormalParamListAux					{$$=create_node("FormalParamListAux", yylineno, col-yyleng, 0, 2, $2, $3);}
 		|				%empty													{$$=create_terminal("Empty", 0, 0, 0, NULL);}
 
-FormalParams:           VarParams                                               {$$ = create_node("FormalParams", 0, 1, $1);}
-        |               Params                                                  {$$ = create_node("FormalParams", 0, 1, $1);}
+FormalParams:           VarParams                                               {$$ = create_node("FormalParams", yylineno, col-yyleng, 0, 1, $1);}
+        |               Params                                                  {$$ = create_node("FormalParams", yylineno, col-yyleng, 0, 1, $1);}
 
-VarParams:              VAR IDList COLON IDAux                                  {$$=create_node("VarParams", 1, 2, $2, $4);}
+VarParams:              VAR IDList COLON IDAux                                  {$$=create_node("VarParams", yylineno, col-yyleng, 1, 2, $2, $4);}
 
-Params:                 IDList COLON IDAux                                      {$$=create_node("Params", 1, 2, $1, $3);}
+Params:                 IDList COLON IDAux                                      {$$=create_node("Params", yylineno, col-yyleng, 1, 2, $1, $3);}
 
 FuncBlock: 				VarPart StatPart										{$$=create_funcblock($1, $2);}
 
-StatPart: 				CompStat												{$$=create_node("StatPart", 0, 1, $1);}
+StatPart: 				CompStat												{$$=create_node("StatPart", yylineno, col-yyleng, 0, 1, $1);}
 
-CompStat:				YBEGIN StatList END										{$$=create_node("CompStat", 0, 1, $2);}
+CompStat:				YBEGIN StatList END										{$$=create_node("CompStat", yylineno, col-yyleng, 0, 1, $2);}
 
-StatList: 				Stat SemicStatAux										{$$=create_node("StatList", 1, 2, $1, $2);}
+StatList: 				Stat SemicStatAux										{$$=create_node("StatList", yylineno, col-yyleng, 1, 2, $1, $2);}
 
-SemicStatAux:			SEMIC Stat SemicStatAux									{$$=create_node("SemicStatAux", 0, 2, $2, $3);}
+SemicStatAux:			SEMIC Stat SemicStatAux									{$$=create_node("SemicStatAux", yylineno, col-yyleng, 0, 2, $2, $3);}
 		|				%empty													{$$=create_terminal("Empty", 0, 0, 0, NULL);}
 
-Stat: 					CompStat												{$$=create_node("Stat", 0, 1, $1);}
+Stat: 					CompStat												{$$=create_node("Stat", yylineno, col-yyleng, 0, 1, $1);}
 		|				IF Expr THEN Stat ELSE Stat								{$$=create_ifelse($2, $4, $6);}
 		|				IF Expr THEN Stat										{$$=create_ifelse($2, $4, create_terminal("StatList", yylineno, col-yyleng, 1, NULL));}
 		|				WHILE Expr DO Stat										{$$=create_while($2, $4);}
 		|				REPEAT StatList UNTIL Expr								{$$=create_repeat($2, $4);}
-		|				VAL LBRAC PARAMSTR LBRAC Expr RBRAC COMMA IDAux RBRAC 	{$$=create_node("ValParam", 1, 2, $5, $8);}
-		|				IDAux ASSIGN Expr										{$$=create_node("Assign", 1, 2, $1, $3);}
-		|				WRITELN WritelnPList									{$$=create_node("WriteLn", 1, 1, $2);}
+		|				VAL LBRAC PARAMSTR LBRAC Expr RBRAC COMMA IDAux RBRAC 	{$$=create_node("ValParam", yylineno, col-yyleng, 1, 2, $5, $8);}
+		|				IDAux ASSIGN Expr										{$$=create_node("Assign", yylineno, col-yyleng, 1, 2, $1, $3);}
+		|				WRITELN WritelnPList									{$$=create_node("WriteLn", yylineno, col-yyleng, 1, 1, $2);}
 		|				WRITELN													{$$=create_terminal("WriteLn", yylineno, col-yyleng, 1, $1);}
 		|				%empty													{$$=create_terminal("Empty", 0, 0, 0, NULL);}
 
-WritelnPList:			LBRAC Expr CommaExpStrAux RBRAC							{$$=create_node("WritelnPList", 0, 2, $2, $3);}
-		|				LBRAC STRINGAux CommaExpStrAux RBRAC					{$$=create_node("WritelnPList", 0, 2, $2, $3);}
+WritelnPList:			LBRAC Expr CommaExpStrAux RBRAC							{$$=create_node("WritelnPList", yylineno, col-yyleng, 0, 2, $2, $3);}
+		|				LBRAC STRINGAux CommaExpStrAux RBRAC					{$$=create_node("WritelnPList", yylineno, col-yyleng, 0, 2, $2, $3);}
 
-CommaExpStrAux:			COMMA Expr CommaExpStrAux								{$$=create_node("CommaExpStrAux", 0, 2, $2, $3);}
-		|				COMMA STRINGAux CommaExpStrAux							{$$=create_node("CommaExpStrAux", 0, 2, $2, $3);}
+CommaExpStrAux:			COMMA Expr CommaExpStrAux								{$$=create_node("CommaExpStrAux", yylineno, col-yyleng, 0, 2, $2, $3);}
+		|				COMMA STRINGAux CommaExpStrAux							{$$=create_node("CommaExpStrAux", yylineno, col-yyleng, 0, 2, $2, $3);}
 		|				%empty													{$$=create_terminal("Empty", 0, 0, 0, NULL);}
 
-Expr:					SimpleExpr '=' SimpleExpr								{$$=create_node("Eq", 1, 2, $1, $3);}
-		|				SimpleExpr DIF SimpleExpr								{$$=create_node("Neq", 1, 2, $1, $3);}
-		|				SimpleExpr '<' SimpleExpr								{$$=create_node("Lt", 1, 2, $1, $3);}
-		|				SimpleExpr '>' SimpleExpr								{$$=create_node("Gt", 1, 2, $1, $3);}
-		|				SimpleExpr LESSEQ SimpleExpr							{$$=create_node("Leq", 1, 2, $1, $3);}
-		|				SimpleExpr GREATEQ SimpleExpr							{$$=create_node("Geq", 1, 2, $1, $3);}
-		|				SimpleExpr												{$$=create_node("SimpleExpr", 0, 1, $1);}
+Expr:					SimpleExpr '=' SimpleExpr								{$$=create_node("Eq", yylineno, col-yyleng, 1, 2, $1, $3);}
+		|				SimpleExpr DIF SimpleExpr								{$$=create_node("Neq", yylineno, col-yyleng, 1, 2, $1, $3);}
+		|				SimpleExpr '<' SimpleExpr								{$$=create_node("Lt", yylineno, col-yyleng, 1, 2, $1, $3);}
+		|				SimpleExpr '>' SimpleExpr								{$$=create_node("Gt", yylineno, col-yyleng, 1, 2, $1, $3);}
+		|				SimpleExpr LESSEQ SimpleExpr							{$$=create_node("Leq", yylineno, col-yyleng, 1, 2, $1, $3);}
+		|				SimpleExpr GREATEQ SimpleExpr							{$$=create_node("Geq", yylineno, col-yyleng, 1, 2, $1, $3);}
+		|				SimpleExpr												{$$=create_node("SimpleExpr", yylineno, col-yyleng, 0, 1, $1);}
 
-SimpleExpr:				Term													{$$=create_node("Term", 0, 1, $1);}
-		|				AddOP													{$$=create_node("AddOP", 0, 1, $1);}
+SimpleExpr:				Term													{$$=create_node("Term", yylineno, col-yyleng, 0, 1, $1);}
+		|				AddOP													{$$=create_node("AddOP", yylineno, col-yyleng, 0, 1, $1);}
 
-AddOP:					SimpleExpr '+' Term										{$$=create_node("Add", 1, 2, $1, $3);}
-		|				SimpleExpr '-' Term										{$$=create_node("Sub", 1, 2, $1, $3);}
-		|				SimpleExpr OR Term										{$$=create_node("Or", 1, 2, $1, $3);}
-		|				'-' Term												{$$=create_node("Minus", 1, 1, $2);}
-		|				'+' Term												{$$=create_node("Plus", 1, 1, $2);}
+AddOP:					SimpleExpr '+' Term										{$$=create_node("Add", yylineno, col-yyleng, 1, 2, $1, $3);}
+		|				SimpleExpr '-' Term										{$$=create_node("Sub", yylineno, col-yyleng, 1, 2, $1, $3);}
+		|				SimpleExpr OR Term										{$$=create_node("Or", yylineno, col-yyleng, 1, 2, $1, $3);}
+		|				'-' Term												{$$=create_node("Minus", yylineno, col-yyleng, 1, 1, $2);}
+		|				'+' Term												{$$=create_node("Plus", yylineno, col-yyleng, 1, 1, $2);}
 
-Term:					Term '/' Factor											{$$=create_node("RealDiv", 1, 2, $1, $3);}
-		|				Term '*' Factor											{$$=create_node("Mul", 1, 2, $1, $3);}
-		|				Term AND Factor											{$$=create_node("And", 1, 2, $1, $3);}
-		|				Term DIV Factor											{$$=create_node("Div", 1, 2, $1, $3);}
-		|				Term MOD Factor											{$$=create_node("Mod", 1, 2, $1, $3);}
-		|				Factor													{$$=create_node("Factor", 0, 1, $1);}
+Term:					Term '/' Factor											{$$=create_node("RealDiv", yylineno, col-yyleng, 1, 2, $1, $3);}
+		|				Term '*' Factor											{$$=create_node("Mul", yylineno, col-yyleng, 1, 2, $1, $3);}
+		|				Term AND Factor											{$$=create_node("And", yylineno, col-yyleng, 1, 2, $1, $3);}
+		|				Term DIV Factor											{$$=create_node("Div", yylineno, col-yyleng, 1, 2, $1, $3);}
+		|				Term MOD Factor											{$$=create_node("Mod", yylineno, col-yyleng, 1, 2, $1, $3);}
+		|				Factor													{$$=create_node("Factor", yylineno, col-yyleng, 0, 1, $1);}
 
 Factor:					IDAux													{;}
-		|				NOT Factor												{$$=create_node("Not", 1, 1, $2);}
-		|				LBRAC Expr RBRAC										{$$=create_node("LbracRbrac", 0, 1, $2);}
-		|				IDAux ParamList											{$$=create_node("Call", 1, 2, $1, $2);}
+		|				NOT Factor												{$$=create_node("Not", yylineno, col-yyleng, 1, 1, $2);}
+		|				LBRAC Expr RBRAC										{$$=create_node("LbracRbrac", yylineno, col-yyleng, 0, 1, $2);}
+		|				IDAux ParamList											{$$=create_node("Call", yylineno, col-yyleng, 1, 2, $1, $2);}
 		|				INTLIT													{$$=create_terminal("IntLit", yylineno, col-yyleng, 1, $1);}
 		|				REALLIT													{$$=create_terminal("RealLit", yylineno, col-yyleng, 1, $1);}
 
-ParamList:				LBRAC Expr CommaExprAux RBRAC							{$$=create_node("ParamList", 0, 2, $2, $3);}
+ParamList:				LBRAC Expr CommaExprAux RBRAC							{$$=create_node("ParamList", yylineno, col-yyleng, 0, 2, $2, $3);}
 
-CommaExprAux:			COMMA Expr CommaExprAux									{$$=create_node("CommaExprAux", 0, 2, $2, $3);}
+CommaExprAux:			COMMA Expr CommaExprAux									{$$=create_node("CommaExprAux", yylineno, col-yyleng, 0, 2, $2, $3);}
 		|				%empty													{$$=create_terminal("Empty", yylineno, col-yyleng, 0, NULL);}
 
 IDAux:					ID														{$$=create_terminal("Id", yylineno, col-yyleng, 1, $1);}
