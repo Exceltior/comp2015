@@ -344,22 +344,37 @@ char check_number_of_arguments(char* name, int n_args) {
 }
 
 
-char check_write_value(char* name, char* type) {
+char* check_write_value(char* name, char* type) {
 	name = str_to_lower(name);
 	symbol* first = table[cur_table_index]->first;
-	if (!strcmp(type, "Id")) {
-		while(first != NULL) {
-			if (!strcmp(first->name, "integer"))
-				return 1;
-			else if (!strcmp(first->name, "boolean"))
-				return 1;
-			else if (!strcmp(first->name, "real"))
-				return 1;
-			first = first->next;
-		}
+	while(first != NULL) {
+		if (!strcmp(first->name, "integer"))
+			return first->type;
+		else if (!strcmp(first->name, "boolean"))
+			return first->type;
+		else if (!strcmp(first->name, "real"))
+			return first->type;
+		first = first->next;
 	}
-	else if (!strcmp(type, "String")) {
-		return 1;
+	first = table[2]->first;
+	while(first != NULL) {
+		if (!strcmp(first->name, "integer"))
+			return first->type;
+		else if (!strcmp(first->name, "boolean"))
+			return first->type;
+		else if (!strcmp(first->name, "real"))
+			return first->type;
+		first = first->next;
+	}
+	first = table[0]->first;
+	while(first != NULL) {
+		if (!strcmp(first->name, "integer"))
+			return first->type;
+		else if (!strcmp(first->name, "boolean"))
+			return first->type;
+		else if (!strcmp(first->name, "real"))
+			return first->type;
+		first = first->next;
 	}
 	return 0;
 }
@@ -396,14 +411,6 @@ char check_function(char* name) {
 char check_return_type(char* type) {
 	if (type == NULL)
 		return 0;
-	int i;
-	type = str_to_lower(type);
-	symbol* first = table[0]->first;
-	for (i=0;i<5;i++) {
-		if (!strcmp(first->name, type))
-			return 1;
-		first = first->next;
-	}
 	return 0;
 }
 
@@ -731,17 +738,19 @@ char build_table(node* n) {
 			symbol_line = n->children[i]->line;
 			symbol_col = n->children[i]->col;
 			if (!strcmp(n->children[i]->type, "Call")) {
-				//ver se a funcao existe, symbol not defined
-				char* return_type = get_function_return_type(n->children[i]->children[0]->value);
-				if (!check_return_type(return_type)) {
+				/*char* return_type = get_function_return_type(n->children[i]->children[0]->value);
+				if (!check_write_value(return_type)) {
 					printf("Line %d, col %d: Cannot write values of type _%s_\n", symbol_line, symbol_col, return_type);
 					exit(0);
-				}
+				}*/
 			}
-			else {
-				if (!check_write_value(name, n->children[i]->type)) {
-					printf("Line %d, col %d: Cannot write values of type _%s_\n", symbol_line, symbol_col, name);
-					exit(0);
+			else if (!strcmp(n->children[i]->type, "Id")) {
+				char* write_type = check_write_value(name, n->children[i]->type);
+				if (write_type != NULL) {
+					if (strcmp(write_type, "integer") && (strcmp(write_type, "real")) && (strcmp(write_type, "boolean"))) {
+						printf("Line %d, col %d: Cannot write values of type _%s_\n", symbol_line, symbol_col, write_type);
+						exit(0);
+					}
 				}
 			}
 		}
