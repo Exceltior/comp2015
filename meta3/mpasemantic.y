@@ -103,33 +103,33 @@ node* create_node(char* type, int line, int col, int used, int n_children, ...) 
 
 node* create_ifelse(node* a, node* b, node* c) {
 	if ((!strcmp(b->type, "Empty")) || ((!strcmp(b->type, "Stat")) && (b->n_children == 0))) {
-		b = create_terminal("StatList", yylineno, col-yyleng, 1, NULL);
+		b = create_terminal("StatList", -1, -1, 1, NULL);
 	}
 	if ((!strcmp(c->type, "Empty")) || ((!strcmp(c->type, "Stat")) && (c->n_children == 0))) {
-		c = create_terminal("StatList", yylineno, col-yyleng, 1, NULL);
+		c = create_terminal("StatList", -1, -1, 1, NULL);
 	}
-	return create_node("IfElse", yylineno, col-yyleng, 1, 3, a, b, c);
+	return create_node("IfElse", -1, -1, 1, 3, a, b, c);
 }
 
 node* create_repeat(node *a, node *b) {
 	if ((!strcmp(a->type, "Empty")) || ((!strcmp(a->type, "StatList")) && (a->n_children == 0))) {
 		a  = create_terminal("StatList", yylineno, col-yyleng, 1, NULL);
 	}
-	return create_node("Repeat", yylineno, col-yyleng, 1, 2, a, b);
+	return create_node("Repeat", -1, -1, 1, 2, a, b);
 }
 
 node* create_while(node *a, node *b) {
 	if ((!strcmp(b->type, "Empty")) || ((b->n_children == 0))) {
-		b  = create_terminal("StatList", yylineno, col-yyleng, 1, NULL);
+		b  = create_terminal("StatList", -1, -1, 1, NULL);
 	}
-	return create_node("While", yylineno, col-yyleng, 1, 2, a, b);
+	return create_node("While", -1, -1, 1, 2, a, b);
 }
 
 node* create_funcblock(node *a, node* b) {
 	if ((!strcmp(b->type, "StatPart")) && (b->n_children == 0)) {
-		b = create_terminal("StatList", yylineno, col-yyleng, 1, NULL);
+		b = create_terminal("StatList", -1, -1, 1, NULL);
 	}
-	create_node("FuncBlock", yylineno, col-yyleng, 0, 2, a, b);
+	create_node("FuncBlock", -1, -1, 0, 2, a, b);
 }
 
 void print_node(node* n, int depth) {
@@ -587,7 +587,10 @@ char check_unary_operator(node* n) {
 	if (type == NULL)
 		return 1;
 	if ((!strcmp(n->type, "Minus")) || (!strcmp(n->type, "Plus"))) {
-		if ((!strcmp(type, "boolean")) || (!strcmp(type, "string"))) {
+		if ((!strcmp(type, "integer")) || (!strcmp(type, "real"))) {
+			return 1;
+		}
+		else {
 			printf("Line %d, col %d: Operator ", n->line, n->col);
 			if (!strcmp(n->type, "Minus")) {
 				printf("-");
@@ -595,10 +598,18 @@ char check_unary_operator(node* n) {
 			else {
 				printf("+");
 			}
-			printf(" cannot be applied to type %s\n", type);
+			printf(" cannot be applied to type _%s_\n", type);
 			return 0;
 		}
-		else return 1;
+	}
+	else if (!strcmp(n->type, "Not")) {
+		if (!strcmp(type, "boolean")) {
+			return 1;
+		}
+		else {
+			printf("Line %d, col %d: Operator not cannot be applied to type _%s_\n", n->line, n->col, type);
+			return 0;
+		}
 	}
 }
 
@@ -840,7 +851,7 @@ char build_table(node* n) {
 						symbol_col = n->children[i]->col;
 						if ((arg_type != NULL) && (cur_arg_type != NULL)) {
 							if (strcmp(arg_type, cur_arg_type)) {
-								printf("Line %d, col %d: Incompatible type for argument %d in call to function %s (got %s, expected %s)\n", symbol_line, symbol_col, i+1, name, cur_arg_type, arg_type);
+								printf("Line %d, col %d: Incompatible type for argument %d in call to function %s (got _%s_, expected _%s_)\n", symbol_line, symbol_col, i+1, name, cur_arg_type, arg_type);
 								exit(0);
 							}
 						}
