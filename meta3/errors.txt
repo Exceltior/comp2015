@@ -1,0 +1,12 @@
+Cannot write values of type <type>
+Function identifier expected - DONE
+Incompatible type for argument <num> in call to function <token> (got <type>, expected <type>)
+Incompatible type in assigment to <token> (got <type>, expected <type>)
+Incompatible type in <statement> statement (got <type>, expected <type>)
+Operator <token> cannot be applied to type <type>
+Operator <token> cannot be applied to types <type>, <type>
+Symbol <token> already defined - DONE
+Symbol <token> not defined - DONE
+Type identifier expected - DONE
+Variable identifier expected
+Wrong number of arguments in call to function <token> (got <type>, expected <type>)

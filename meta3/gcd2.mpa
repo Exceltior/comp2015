@@ -1,5 +1,5 @@
 program gcd2(output);
-var x, y: integer;
+var x, y: integer; numero: integer;
 function gcd2(A, B: integer) : integer ; forward;
 function gcd3(C, D: integer) : integer ; forward;
 function gcd(A, B: integer): integer;
@@ -17,7 +17,7 @@ function gcd(A, B: integer): integer;
  end
  end;
 function gcd2;
- var j, k, J: integer;
+ var j, k: integer;
  begin
  if A = 0 then
  gcd := B

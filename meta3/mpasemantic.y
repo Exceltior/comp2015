@@ -246,7 +246,7 @@ char check_global_types(char *type) {
 	while(first != NULL) {
 		if (!strcmp(first->name, type)) {
             if(first->type != NULL && !strcmp(first->type, "type"))
-			    return 1;			
+			    return 1;
 		}
 		first = first->next;
 	}
@@ -274,7 +274,7 @@ char check_global_ids(char *name) {
     first = table[2]->first;
 	while(first != NULL) {
 		if (!strcmp(first->name, name)) {
-            return 1;		
+            return 1;
 		}
 		first = first->next;
 	}
@@ -282,6 +282,24 @@ char check_global_ids(char *name) {
 	while(first != NULL) {
 		if (!strcmp(first->name, name)) {
 	        return 1;
+		}
+		first = first->next;
+	}
+	return 0;
+}
+
+/*function identifier expected*/
+char check_function_identifier(char* name) {
+	name = str_to_lower(name);
+	symbol* first = table[2]->first;
+	while (first != NULL) {
+		if (!strcmp(first->name, name)) {
+			if (!strcmp(first->type, "function")) {
+				return 1;
+			}
+			else {
+				return 0;
+			}
 		}
 		first = first->next;
 	}
@@ -364,10 +382,6 @@ char build_table(node* n) {
 		symbol_type = n->children[2]->value;
 		symbol_line = n->children[2]->line;
 		symbol_col = n->children[2]->col;
-		/*if (!check_symbol_type(symbol_type)) {
-			printf("Line %d, col %d: Type identifier expected\n", symbol_line, symbol_col);
-			exit(0);
-		}*/
 		insert_symbol(table[2], n->children[0]->value, "function", NULL, NULL);
 		while(table[cur_table_index] != NULL) {
 			cur_table_index++;
@@ -378,6 +392,12 @@ char build_table(node* n) {
 	else if (!strcmp(n->type, "FuncDef2")) {
 		int index = -1;
 		i = 0;
+		if (!check_function_identifier(n->children[0]->value)) {
+			symbol_line = n->children[0]->line;
+			symbol_col = n->children[0]->col;
+			printf("Line %d, col %d: Function identifier expected\n", symbol_line, symbol_col);
+			exit(0);
+		}
 		while(table[i] != NULL) {
 			if (!strcmp(table[i]->first->name, str_to_lower(n->children[0]->value))) {
 				index = i;
@@ -399,7 +419,7 @@ char build_table(node* n) {
 		symbol_col = n->children[n->n_children-1]->col;
         if (!check_global_ids(symbol_type)) {
             printf("Line %d, col %d: Symbol %s not defined\n", symbol_line, symbol_col, symbol_type);
-            exit(0);          
+            exit(0);
         }
         else if (!check_global_types(symbol_type)) {
             printf("Line %d, col %d: Type identifier expected\n", symbol_line, symbol_col);
@@ -419,10 +439,6 @@ char build_table(node* n) {
 		symbol_type = n->children[n->n_children-1]->value;
 		symbol_line = n->children[n->n_children-1]->line;
 		symbol_col = n->children[n->n_children-1]->col;
-		/*if (!check_symbol_type(symbol_type)) {
-			printf("Line %d, col %d: Type identifier expected\n", symbol_line, symbol_col);
-			exit(0);
-		}*/
 		for (i=0;i<n->n_children-1;i++) {
 			insert_symbol(table[cur_table_index], n->children[i]->value, symbol_type, "param", NULL);
 		}
@@ -431,10 +447,6 @@ char build_table(node* n) {
 		symbol_type = n->children[n->n_children-1]->value;
 		symbol_line = n->children[n->n_children-1]->line;
 		symbol_col = n->children[n->n_children-1]->col;
-		/*if (!check_symbol_type(symbol_type)) {
-			printf("Line %d, col %d: Type identifier expected\n", symbol_line, symbol_col);
-			exit(0);
-		}*/
 		for (i=0;i<n->n_children-1;i++) {
 			insert_symbol(table[cur_table_index], n->children[i]->value, symbol_type, "varparam", NULL);
 		}
