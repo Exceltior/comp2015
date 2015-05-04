@@ -172,6 +172,7 @@ typedef struct symbol {
 typedef struct symbol_table {
 	symbol* first;
 	char* name;
+	int func_defined;
 } symbol_table;
 
 symbol_table** table;
@@ -193,6 +194,7 @@ symbol* new_symbol(char* name, char* type, char* flag, char* value) {
 symbol_table* new_symbol_table(char* name) {
 	symbol_table* st = (symbol_table*)malloc(sizeof(symbol_table));
 	st->name = strdup(name);
+	st->func_defined = 0;
 	return st;
 }
 
@@ -378,6 +380,19 @@ char* check_function_write_value(char* name) {
 	return NULL;
 }
 
+char check_function(char* name) {
+	name = str_to_lower(name);
+	symbol* first = table[2]->first;
+	while(first != NULL) {
+		if(!strcmp(first->name, name)) {
+			if(!strcmp(first->type, "function"))
+				return 1;
+		}
+		first = first->next;
+	}
+	return 0;
+}
+
 char check_return_type(char* type) {
 	if (type == NULL)
 		return 0;
@@ -489,6 +504,8 @@ char build_table(node* n) {
 			cur_table_index++;
 		}
 		table[cur_table_index] = new_symbol_table("Function");
+		if(!strcmp(n->type, "FuncDef"))
+			table[cur_table_index]->func_defined = 1;
 		insert_symbol(table[cur_table_index], n->children[0]->value, symbol_type, "return", NULL);
 	}
 	else if (!strcmp(n->type, "FuncDef2")) {
@@ -514,6 +531,11 @@ char build_table(node* n) {
 			printf("Line %d, col %d: Function identifier expected\n", symbol_line, symbol_col);
 			exit(0);
 		}
+		if(table[cur_table_index]->func_defined) {
+			printf("Line %d, col %d: Symbol %s already defined\n", (int)n->children[0]->line, (int)n->children[0]->col, (char*)n->children[0]->value);
+			exit(0);
+		}
+		table[cur_table_index]->func_defined = 1;
 	}
     //New error checkings for VarDecl
 	else if (!strcmp(n->type, "VarDecl")) {
@@ -588,6 +610,14 @@ char build_table(node* n) {
 		if (n->n_children > 0) {
 			char* name = n->children[0]->value;
 			if (name != NULL) {
+				if(!check_defined_on_table(name, 2)) {
+					printf("Line %d, col %d: Symbol %s not defined\n", (int)n->children[0]->line, (int)n->children[0]->col, (char*)n->children[0]->value);
+					exit(0);
+				}
+				else if(!check_function(name)) {
+					printf("Line %d, col %d: Function identifier expected\n", n->children[0]->line, n->children[0]->col);
+					exit(0);
+				}
 				int expected = check_number_of_arguments(name, n->n_children-1);
 				symbol_line = n->children[0]->line;
 				symbol_col = n->children[0]->col;
