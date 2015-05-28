@@ -1,0 +1,5 @@
+program gcd(output);
+begin
+    writeln('ola');
+    writeln('ola2')
+end.

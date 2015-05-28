@@ -1,0 +1,4 @@
+lex mpacompile.l
+yacc -d mpacompile.y
+gcc -o mpacompile y.tab.c lex.yy.c -ll -ly
+zip mpacompile.zip mpacompile.l mpacompile.y
