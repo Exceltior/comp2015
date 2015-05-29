@@ -768,20 +768,20 @@ char build_table(node* n) {
 		//Check function return type
 		symbol_col = n->children[2]->col;
 		if (!check_global_ids(symbol_type)) {
-            printf("Line %d, col %d: Symbol %s not defined\n", symbol_line, symbol_col, symbol_type);
-            exit(0);
+            //printf("Line %d, col %d: Symbol %s not defined\n", symbol_line, symbol_col, symbol_type);
+            //exit(0);
         }
         else if (!check_global_types(symbol_type)) {
-            printf("Line %d, col %d: Type identifier expected\n", symbol_line, symbol_col);
-            exit(0);
+            //printf("Line %d, col %d: Type identifier expected\n", symbol_line, symbol_col);
+            //exit(0);
         }
 		//Check function name
 		if (!check_defined_on_table(n->children[0]->value, 2)) {
 			insert_symbol(table[2], n->children[0]->value, "function", NULL, NULL);
 		}
 		else {
-			printf("Line %d, col %d: Symbol %s already defined\n", (int)n->children[0]->line, (int)n->children[0]->col, (char*)n->children[0]->value);
-			exit(0);
+			//printf("Line %d, col %d: Symbol %s already defined\n", (int)n->children[0]->line, (int)n->children[0]->col, (char*)n->children[0]->value);
+			//exit(0);
 		}
 		while(table[cur_table_index] != NULL) {
 			cur_table_index++;
@@ -797,8 +797,8 @@ char build_table(node* n) {
 		symbol_line = n->children[0]->line;
 		symbol_col = n->children[0]->col;
 		if (!check_function_identifier(n->children[0]->value)) {
-			printf("Line %d, col %d: Function identifier expected\n", symbol_line, symbol_col);
-			exit(0);
+			//printf("Line %d, col %d: Function identifier expected\n", symbol_line, symbol_col);
+			//exit(0);
 		}
 		while(table[i] != NULL) {
 			if (!strcmp(table[i]->first->name, str_to_lower(n->children[0]->value))) {
@@ -811,12 +811,12 @@ char build_table(node* n) {
 			cur_table_index = index;
 		}
 		else {
-			printf("Line %d, col %d: Function identifier expected\n", symbol_line, symbol_col);
-			exit(0);
+			//printf("Line %d, col %d: Function identifier expected\n", symbol_line, symbol_col);
+			//exit(0);
 		}
 		if(table[cur_table_index]->func_defined) {
-			printf("Line %d, col %d: Symbol %s already defined\n", (int)n->children[0]->line, (int)n->children[0]->col, (char*)n->children[0]->value);
-			exit(0);
+			//printf("Line %d, col %d: Symbol %s already defined\n", (int)n->children[0]->line, (int)n->children[0]->col, (char*)n->children[0]->value);
+			//exit(0);
 		}
 		table[cur_table_index]->func_defined = 1;
 	}
@@ -826,20 +826,20 @@ char build_table(node* n) {
 		symbol_line = n->children[n->n_children-1]->line;
 		symbol_col = n->children[n->n_children-1]->col;
         if (!check_global_ids(symbol_type)) {
-            printf("Line %d, col %d: Symbol %s not defined\n", symbol_line, symbol_col, symbol_type);
-            exit(0);
+           // printf("Line %d, col %d: Symbol %s not defined\n", symbol_line, symbol_col, symbol_type);
+            //exit(0);
         }
         else if (!check_global_types(symbol_type)) {
-            printf("Line %d, col %d: Type identifier expected\n", symbol_line, symbol_col);
-            exit(0);
+            //printf("Line %d, col %d: Type identifier expected\n", symbol_line, symbol_col);
+            //exit(0);
         }
         for (i=0;i<n->n_children-1;i++) {
 			if (!check_already_defined(n->children[i]->value)) {
 				insert_symbol(table[cur_table_index], n->children[i]->value, symbol_type, NULL, NULL);
 			}
 			else {
-				printf("Line %d, col %d: Symbol %s already defined\n", (int)n->children[i]->line, (int)n->children[i]->col, (char*)n->children[i]->value);
-				exit(0);
+				//printf("Line %d, col %d: Symbol %s already defined\n", (int)n->children[i]->line, (int)n->children[i]->col, (char*)n->children[i]->value);
+				//exit(0);
 			}
 		}
 	}
@@ -849,20 +849,20 @@ char build_table(node* n) {
 		symbol_col = n->children[n->n_children-1]->col;
 		//Check types
 		if (!check_global_ids(symbol_type)) {
-            printf("Line %d, col %d: Symbol %s not defined\n", symbol_line, symbol_col, symbol_type);
-            exit(0);
+            //printf("Line %d, col %d: Symbol %s not defined\n", symbol_line, symbol_col, symbol_type);
+            //exit(0);
         }
         else if (!check_global_types(symbol_type)) {
-            printf("Line %d, col %d: Type identifier expected\n", symbol_line, symbol_col);
-            exit(0);
+            //printf("Line %d, col %d: Type identifier expected\n", symbol_line, symbol_col);
+            //exit(0);
         }
 		for (i=0;i<n->n_children-1;i++) {
 			if(!check_already_defined(n->children[i]->value)) {
 				insert_symbol(table[cur_table_index], n->children[i]->value, symbol_type, "param", NULL);
 			}
 			else {
-				printf("Line %d, col %d: Symbol %s already defined\n", (int)n->children[i]->line, (int)n->children[i]->col, (char*)n->children[i]->value);
-				exit(0);
+				//printf("Line %d, col %d: Symbol %s already defined\n", (int)n->children[i]->line, (int)n->children[i]->col, (char*)n->children[i]->value);
+				//exit(0);
 			}
 		}
 	}
@@ -872,20 +872,20 @@ char build_table(node* n) {
 		symbol_col = n->children[n->n_children-1]->col;
 		//Check types
 		if (!check_global_ids(symbol_type)) {
-            printf("Line %d, col %d: Symbol %s not defined\n", symbol_line, symbol_col, symbol_type);
-            exit(0);
+           //printf("Line %d, col %d: Symbol %s not defined\n", symbol_line, symbol_col, symbol_type);
+           //exit(0);
         }
         else if (!check_global_types(symbol_type)) {
-            printf("Line %d, col %d: Type identifier expected\n", symbol_line, symbol_col);
-            exit(0);
+            //printf("Line %d, col %d: Type identifier expected\n", symbol_line, symbol_col);
+            //exit(0);
         }
 		for (i=0;i<n->n_children-1;i++) {
 			if(!check_already_defined(n->children[i]->value)) {
 				insert_symbol(table[cur_table_index], n->children[i]->value, symbol_type, "varparam", NULL);
 			}
 			else {
-				printf("Line %d, col %d: Symbol %s already defined\n", (int)n->children[i]->line, (int)n->children[i]->col, (char*)n->children[i]->value);
-				exit(0);
+				//printf("Line %d, col %d: Symbol %s already defined\n", (int)n->children[i]->line, (int)n->children[i]->col, (char*)n->children[i]->value);
+				//exit(0);
 			}
 		}
 	}
@@ -894,19 +894,19 @@ char build_table(node* n) {
 			char* name = n->children[0]->value;
 			if (name != NULL) {
 				if(!check_defined_on_table(name, 2)) {
-					printf("Line %d, col %d: Symbol %s not defined\n", (int)n->children[0]->line, (int)n->children[0]->col, (char*)n->children[0]->value);
-					exit(0);
+					//printf("Line %d, col %d: Symbol %s not defined\n", (int)n->children[0]->line, (int)n->children[0]->col, (char*)n->children[0]->value);
+					//exit(0);
 				}
 				else if(!check_function(name)) {
-					printf("Line %d, col %d: Function identifier expected\n", n->children[0]->line, n->children[0]->col);
-					exit(0);
+					//printf("Line %d, col %d: Function identifier expected\n", n->children[0]->line, n->children[0]->col);
+					//exit(0);
 				}
 				int expected = check_number_of_arguments(name, n->n_children-1);
 				symbol_line = n->children[0]->line;
 				symbol_col = n->children[0]->col;
 				if (expected != n->n_children-1) {
-					printf("Line %d, col %d: Wrong number of arguments in call to function %s (got %d, expected %d)\n", symbol_line, symbol_col, name, n->n_children-1, expected);
-					exit(0);
+					//printf("Line %d, col %d: Wrong number of arguments in call to function %s (got %d, expected %d)\n", symbol_line, symbol_col, name, n->n_children-1, expected);
+					//exit(0);
 				}
 				/*if (n->n_children > 0) {
 					for (i=1;i<n->n_children;i++) {
@@ -944,21 +944,21 @@ char build_table(node* n) {
 				char* return_type = get_function_return_type(n->children[i]->children[0]->value);
 				if (return_type != NULL) {
 					if (strcmp(return_type, "integer") && (strcmp(return_type, "real")) && (strcmp(return_type, "boolean"))) {
-						printf("Line %d, col %d: Cannot write values of type _%s_\n", symbol_line, symbol_col, return_type);
-						exit(0);
+						//printf("Line %d, col %d: Cannot write values of type _%s_\n", symbol_line, symbol_col, return_type);
+						//exit(0);
 					}
 				}
 			}
 			else if (!strcmp(n->children[i]->type, "Id")) {
 				if (!check_global_ids(name)) {
-					printf("Line %d, col %d: Symbol %s not defined\n", (int)n->children[i]->line, (int)n->children[i]->col, (char*)n->children[i]->value);
-					exit(0);
+					//printf("Line %d, col %d: Symbol %s not defined\n", (int)n->children[i]->line, (int)n->children[i]->col, (char*)n->children[i]->value);
+					//exit(0);
 				}
 				char* write_type = check_write_value(name, n->children[i]->type);
 				if (write_type != NULL) {
 					if (strcmp(write_type, "integer") && (strcmp(write_type, "real")) && (strcmp(write_type, "boolean"))) {
-						printf("Line %d, col %d: Cannot write values of type _%s_\n", symbol_line, symbol_col, write_type);
-						exit(0);
+						//printf("Line %d, col %d: Cannot write values of type _%s_\n", symbol_line, symbol_col, write_type);
+						//exit(0);
 					}
 				}
 			}
@@ -967,19 +967,19 @@ char build_table(node* n) {
 	else if (!strcmp(n->type, "Assign")) {
 		if (check_defined_on_table(n->children[0]->value, 0) || check_function_identifier(n->children[0]->value)) {
 			if (strcmp(n->children[0]->value, table[cur_table_index]->first->name)) {
-				printf("Line %d, col %d: Variable identifier expected\n", n->children[0]->line, n->children[0]->col);
-				exit(0);
+				//printf("Line %d, col %d: Variable identifier expected\n", n->children[0]->line, n->children[0]->col);
+				//exit(0);
 			}
 		}
 		if (!check_global_ids(n->children[0]->value)) {
-			printf("Line %d, col %d: Symbol %s not defined\n", n->children[0]->line, n->children[0]->col, n->children[0]->value);
-			exit(0);
+			//printf("Line %d, col %d: Symbol %s not defined\n", n->children[0]->line, n->children[0]->col, n->children[0]->value);
+			//exit(0);
 		}
 		/*if (!check_assignment(n->children[0], n->children[1])) {
 			exit(0);
 		}*/
 	}
-	else if (is_expression(n->type)) {
+	/*else if (is_expression(n->type)) {
 		if (n->n_children == 1) {
 			if (!check_unary_operator(n)) {
 				exit(0);
@@ -990,7 +990,7 @@ char build_table(node* n) {
 				exit(0);
 			}
 		}
-	}
+	}*/
 	for (i=0;i<n->n_children;i++) {
 		build_table(n->children[i]);
 	}
@@ -998,8 +998,44 @@ char build_table(node* n) {
 
 /*CODE*/
 int current_string = 0;
-int current_scope_string;
+int current_scope_var;
 char global_strings[MAX_STRINGS][MAXLEN];
+
+char* getVarSize(char* var_type) {
+	char* var_size;
+	if (!strcmp(var_type, "boolean")) {
+		var_size = strdup("i1");
+	}
+	else if (!strcmp(var_type, "integer")) {
+		var_size = strdup("i32");
+	}
+	else if (!strcmp(var_type, "real")) {
+		var_size = strdup("double");
+	}
+	return var_size;
+}
+
+void generateBooleanPrint() {
+	printf("define void @printBoolean(i1 %%a) {");
+	printf("\n\t%%1 = alloca i1");
+	printf("\n\tstore i1 %%a, i1* %%1");
+	printf("\n\t%%2 = load i1* %%1");
+	printf("\n\t%%3 = icmp eq i1 %%2, 0");
+	printf("\n\tbr i1 %%3, label %%4, label %%6");
+	printf("\n\t; <label>:4");
+	printf("\n\t%%5 = call i32 (i8*, ...)* @printf(i8* getelementptr inbounds ([7 x i8]* @.puts_false, i32 0, i32 0))");
+	printf("\n\tbr label %%6");
+	printf("\n\t; <label>:6");
+  	printf("\n\t%%7 = call i32 (i8*, ...)* @printf(i8* getelementptr inbounds ([6 x i8]* @.puts_true, i32 0, i32 0))");
+  	printf("\n\tret void\n}\n\n");
+}
+
+void generateDeclarations() {
+	printf("declare i32 @puts(i8* nocapture) nounwind\n");
+	printf("declare i32 @printf(i8*, ...)\n");
+	printf("\n");
+	generateBooleanPrint();
+}
 
 void generateGlobalVars() {
 	//TODO
@@ -1009,22 +1045,81 @@ void generateFunctions() {
 	//TODO
 }
 
+void generateMainVars(node* n) {
+	int i;
+	char* var_size;
+	if (!strcmp(n->type, "VarDecl")) {
+		char* var_type = n->children[n->n_children-1]->value;
+		var_size = getVarSize(var_type);
+		for (i=0;i<n->n_children-1;i++) {
+			printf("\t%%%s = alloca %s\n", n->children[i]->value, var_size);
+		}
+	}
+	for (i=0;i<n->n_children;i++) {
+		generateMainVars(n->children[i]);
+	}
+}
+
+void genPrint(char* var_type, char* var) {
+	char* printf_type, *var_size;
+	int printf_size;
+	if (!strcmp(var_type, "integer")) {
+		var_size = getVarSize(var_type);
+		printf_size = 4;
+		printf_type = strdup("int");
+		printf("\t%%%d = call i32 (i8*, ...)* @printf(i8* getelementptr inbounds ([%d x i8]* @.printf_%s_str, i32 0, i32 0), %s %s)\n", current_scope_var, printf_size, printf_type, var_size, var);
+		current_scope_var++;
+	}
+	else if (!strcmp(var_type, "real")) {
+		var_size = getVarSize(var_type);
+		printf_size = 7;
+		printf_type = strdup("real");
+		printf("\t%%%d = call i32 (i8*, ...)* @printf(i8* getelementptr inbounds ([%d x i8]* @.printf_%s_str, i32 0, i32 0), %s %s)\n", current_scope_var, printf_size, printf_type, var_size, var);
+		current_scope_var++;
+	}
+	else if (!strcmp(var_type, "boolean")) {
+		printf("\tcall void @printBoolean(i1 %s)\n", var);
+	}
+}
 
 void generateMainInstructions(node* n) {
 	int i;
+	char* var = (char*)malloc(sizeof(char)*20);
 	if (!strcmp(n->type, "WriteLn")) {
 		if (!strcmp(n->children[0]->type, "String")) {
 			char* tmp_str = n->children[0]->value;
-			printf("\t%%tmp_str%d = getelementptr [%d x i8]* @.global_str%d, i64 0, i64 0\n", current_scope_string, strlen(tmp_str)-1, current_string);
-			printf("\tcall i32 @puts(i8* %%tmp_str%d)\n", current_scope_string);
+			printf("\t%%%d = getelementptr [%d x i8]* @.global_str%d, i64 0, i64 0\n", current_scope_var, strlen(tmp_str)-1, current_string);
+			printf("\t%%%d = call i32 @puts(i8* %%%d)\n", current_scope_var+1, current_scope_var);
 			strcpy(global_strings[current_string], tmp_str);
 			current_string++;
-			current_scope_string++;
+			current_scope_var += 2;
+		}
+		else if (!strcmp(n->children[0]->type, "IntLit")) {
+			genPrint("integer", (char*)n->children[0]->value);
+		}
+		else if (!strcmp(n->children[0]->type, "RealLit")) {
+			genPrint("real", (char*)n->children[0]->value);
+		}
+		else if (!strcmp(n->children[0]->type, "Id")) {
+			char* var_type = get_symbol_type(n->children[0]->value);
+			sprintf(var, "%%%d", current_scope_var);
+			printf("\t%%%d = load %s* %%%s\n", current_scope_var, getVarSize(var_type), (char*)n->children[0]->value);
+			current_scope_var++;
+			genPrint(var_type, var);
 		}
 	}
 	for (i=0;i<n->n_children;i++) {
 		generateMainInstructions(n->children[i]);
 	}
+}
+
+void generateMain() {
+	printf("define i32 @main() {\n");
+	current_scope_var = 1;
+	generateMainVars(parsing_tree->children[1]);
+	generateMainInstructions(parsing_tree->children[3]);
+	printf("\tret i32 0\n}\n");
+	printf("\n");
 }
 
 void generateGlobalStrings() {
@@ -1037,23 +1132,10 @@ void generateGlobalStrings() {
 		i++;
 		cur_str = global_strings[i];
 	}
-	printf("\n");
-}
-
-void generateMain() {
-	printf("define i32 @main() {\n");
-	//varPart
-	//TODO
-
-	//ĩnstructions
-	current_scope_string = 0;
-	generateMainInstructions(parsing_tree->children[3]);
-	printf("\tret i32 0\n}\n");
-	printf("\n");
-}
-
-void generateDeclarations() {
-	printf("declare i32 @puts(i8* nocapture) nounwind\n");
+	printf("@.printf_int_str = private unnamed_addr constant [4 x i8] c\"%%d\\0A\\00\"\n");
+	printf("@.printf_real_str = private unnamed_addr constant [7 x i8] c\"%%.12E\\0A\\00\"\n");
+	printf("@.puts_false = private unnamed_addr constant [7 x i8] c\"FALSE\\0A\\00\"\n");
+	printf("@.puts_true = private unnamed_addr constant [6 x i8] c\"TRUE\\0A\\00\"\n");
 	printf("\n");
 }
 
