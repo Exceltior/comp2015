@@ -1,5 +1,20 @@
 program gcd(output);
+var x, Y: boolean;
+z, p: real;
+k, l: integer;
 begin
+	z := 12345e-03;
+	x := true;
+	writeln('', x);
     writeln('ola');
-    writeln('ola2')
+    writeln('teste');
+    writeln(true);
+    writeln(12345e-03);
+    writeln(2.3);
+    writeln(4.3);
+    writeln(98.3);
+    writeln(x);
+    p := 9;
+    writeln(p);
+    writeln(z);
 end.
