@@ -1,0 +1,20 @@
+program exFunction(output);
+var a,b:integer; 
+c,d:boolean; 
+e,f:real;
+begin
+a:= 1;
+b:= 2;
+writeln('a=',a,' ','b=',b);
+c:=true;
+d:=c;
+writeln('a=',a,' ','c=',c,' ','d=',d);
+e:=a;
+f:=3;
+writeln('reals: e=',e,' f=',f);
+writeln(1);
+writeln(1,' ',2,' ',3);
+writeln(2.03e+5,1.0,4.5);
+writeln('ana',' ','are mere');
+writeln('a','!',True,FaLse,1,2,3,3.4e-5,' ',True, False);
+end.
