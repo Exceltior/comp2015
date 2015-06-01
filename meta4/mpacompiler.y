@@ -1357,7 +1357,6 @@ void genCall(node* n) {
 		else if (!strcmp(n->children[i]->type, "Id")) {
 			//TODO
 		}
-		//TODO expr, call
 	}
 	printf("\t%%%d = call %s @%s(", current_scope_var, getVarSize(get_type(n, NULL)), function_id);
 	for (i=1;i<n->n_children;i++) {
@@ -1446,7 +1445,6 @@ void generateInstructions(node* n) {
 						genPrint(var_type, var, new_line);
 					}
 				}
-				//TODO id -> function
 			}
 			else if (!strcmp(n->children[i]->type, "Call")) {
 				genCall(n->children[i]);
