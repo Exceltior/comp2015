@@ -399,6 +399,22 @@ char* get_function_return_type(char* name) {
 	return NULL;
 }
 
+symbol* get_function_table(char* name) {
+	int i = 0, n = 0;
+	symbol* first;
+	name = str_to_lower(name);
+	while(table[i] != NULL) {
+		if (!strcmp(table[i]->name, "Function")) {
+			first = table[i]->first;
+			if (!strcmp(first->name, name)) {
+				return first;
+			}
+		}
+		i++;
+	}
+	return NULL;
+}
+
 char check_function(char* name) {
 	name = str_to_lower(name);
 	symbol* first = table[2]->first;
@@ -503,15 +519,23 @@ char* get_argument_type(char* name, int index) {
 	}
 }
 
-char* get_symbol_type(char* name) {
+char* get_symbol_type(char* name, char* function_id) {
 	name = str_to_lower(name);
-	symbol* first = table[cur_table_index]->first;
-	while(first != NULL) {
-		if (!strcmp(first->name, name)) {
-			return first->type;
+	symbol* first;
+	if (function_id != NULL) {
+		first = get_function_table(function_id);
+		if (first != NULL) {
+			while(first != NULL) {
+				if (first->name == NULL)
+					break;
+				if (!strcmp(first->name, name)) {
+					return first->type;
+				}
+				first = first->next;
+			}
 		}
-		first = first->next;
 	}
+	//check program
 	first = table[2]->first;
 	while(first != NULL) {
 		if (!strcmp(first->name, name)) {
@@ -563,14 +587,14 @@ char is_expression(char* type) {
 	return 0;
 }
 
-char* get_type(node* c) {
+char* get_type(node* c, char* function_id) {
 	char* type;
 	if (!strcmp(c->type, "Id")) {
 		if (c->value != NULL)
-			type = get_symbol_type(c->value);
+			type = get_symbol_type(str_to_lower(c->value), function_id);
 	}
 	else if (!strcmp(c->type, "Call")) {
-		type = get_function_return_type(c->children[0]->value);
+		type = get_function_return_type(str_to_lower(c->children[0]->value));
 	}
 	else if (!strcmp(c->type, "IntLit")) {
 		type = strdup("integer");
@@ -594,7 +618,7 @@ char check_unary_operator(node* n) {
 	char* type;
 	if (c->value == NULL)
 		return 1;
-	type = get_type(c);
+	type = get_type(c, NULL);
 	if (type == NULL)
 		return 1;
 
@@ -630,8 +654,8 @@ char check_normal_operator(node* n) {
 		return 1;
 	if (b->value == NULL)
 		return 1;
-	char* a_type = get_type(a);
-	char* b_type = get_type(b);
+	char* a_type = get_type(a, NULL);
+	char* b_type = get_type(b, NULL);
 	if (a_type == NULL)
 		return 1;
 	if (b_type == NULL)
@@ -1033,7 +1057,28 @@ char* getVarSize(char* var_type) {
 	else if (!strcmp(var_type, "real")) {
 		var_size = strdup("double");
 	}
+	else if (!strcmp(var_type, "IntLit")) {
+		var_size = strdup("i32");
+	}
+	else if (!strcmp(var_type, "RealLit")) {
+		var_size = strdup("double");
+	}
+	else if (!strcmp(var_type, "Boolan")) {
+		var_size = strdup("i1");
+	}
 	return var_size;
+}
+
+char isGlobalVar(char* var) {
+	symbol* first = table[2]->first;
+	while (first != NULL) {
+		if (strcmp(first->type, "function")) {
+			if (!strcmp(first->name, var))
+				return 1;
+		}
+		first = first->next;
+	}
+	return 0;
 }
 
 void generateBooleanPrint() {
@@ -1068,23 +1113,34 @@ void generateBooleanPrint() {
 }
 
 void generateValParam() {
-	printf("\ndefine i32 @valparam(i32 %%index) {\n");
-	printf("%%1 = alloca i32\n");
-	printf("store i32 %%index, i32* %%1\n");
-	printf("%%2 = load i32* %%1\n");
-	printf("%%3 = sext i32 %%2 to i64\n");
-	printf("%%4 = load i8*** @argv\n");
-	printf("%%5 = getelementptr inbounds i8** %%4, i64 %%3\n");
-	printf("%%6 = load i8** %%5\n");
-	printf("%%7 = call i32 @atoi(i8* %%6)\n");
-	printf("ret i32 %%7\n}\n");
+	printf("define i32 @valparam(i32 %%index) {\n");
+	printf("\t%%1 = alloca i32\n");
+	printf("\tstore i32 %%index, i32* %%1\n");
+	printf("\t%%2 = load i32* %%1\n");
+	printf("\t%%3 = sext i32 %%2 to i64\n");
+	printf("\t%%4 = load i8*** @argv\n");
+	printf("\t%%5 = getelementptr inbounds i8** %%4, i64 %%3\n");
+	printf("\t%%6 = load i8** %%5\n");
+	printf("\t%%7 = call i32 @atoi(i8* %%6)\n");
+	printf("\tret i32 %%7\n}\n");
 }
 
 void generateParamcount() {
 	printf("\ndefine i32 @paramcount() {\n");
-	printf("%%1 = load i32* @argc\n");
-	printf("%%2 = sub i32 %%1, 1\n");
-	printf("ret i32 %%2\n}\n");
+	printf("\t%%1 = load i32* @argc\n");
+	printf("\t%%2 = sub i32 %%1, 1\n");
+	printf("\tret i32 %%2\n}\n");
+}
+
+void generateModFunc() {
+	printf("define i32 @mod(i32 %%a, i32 %%b) {\n");
+	printf("\t%%1 = icmp slt i32 %%a, 0\n");
+	printf("\tbr i1 %%1, label %%la, label %%lb\n");
+	printf("\tla:\n");
+	printf("\t%%2 = add i32 %%a, %%b\n");
+	printf("\tret i32 %%2");
+	printf("\tlb:\n");
+	printf("ret i32 %%a\n}\n");
 }
 
 void generateDeclarations() {
@@ -1095,11 +1151,8 @@ void generateDeclarations() {
 	generateBooleanPrint();
 	generateValParam();
 	generateParamcount();
+	generateModFunc();
 	printf("\n");
-}
-
-void generateFunctions() {
-	//TODO
 }
 
 void generateMainVars(node* n) {
@@ -1190,55 +1243,162 @@ void genPrint(char* var_type, char* var, char new_line) {
 	}
 }
 
-char* getExpression(char* expr) {
-	return str_to_lower(expr);
+char* getExpressionType(node *n) {
+	char* type;
+	int i;
+	for (i=0;i<n->n_children;i++) {
+		type = getExpressionType(n->children[i]);
+		if (!strcmp(type, "real")) {
+			return type;
+		}
+	}
+	if (!strcmp(n->type, "IntLit")) {
+		type = strdup("integer");
+	}
+	else if (!strcmp(n->type, "RealLit")) {
+		type = strdup("real");
+	}
+	else if (!strcmp(n->type, "Boolean")) {
+		type = strdup("boolean");
+	}
+	return type;
 }
 
-void genExpression(node *n) {
-	int left = 0;
+void printExpression(node* n, char* var_type) {
+	char* type = str_to_lower(n->type);
+	if (!strcmp(type, "add")) {
+		if (!strcmp(var_type, "real")) {
+			printf("\t%%%d = fadd %s %%%d, %%%d\n", current_scope_var, getVarSize(var_type), current_scope_var-2, current_scope_var-1);
+		}
+		else if (!strcmp(var_type, "integer")) {
+			printf("\t%%%d = add %s %%%d, %%%d\n", current_scope_var, getVarSize(var_type), current_scope_var-2, current_scope_var-1);
+		}
+		current_scope_var++;
+	}
+	else if (!strcmp(type, "sub")) {
+		if (!strcmp(var_type, "real")) {
+			printf("\t%%%d = fsub %s %%%d, %%%d\n", current_scope_var, getVarSize(var_type), current_scope_var-2, current_scope_var-1);
+		}
+		else if (!strcmp(var_type, "integer")) {
+			printf("\t%%%d = sub %s %%%d, %%%d\n", current_scope_var, getVarSize(var_type), current_scope_var-2, current_scope_var-1);
+		}
+		current_scope_var++;
+	}
+	else if (!strcmp(type, "mul")) {
+		if (!strcmp(var_type, "real")) {
+			printf("\t%%%d = fmul %s %%%d, %%%d\n", current_scope_var, getVarSize(var_type), current_scope_var-2, current_scope_var-1);
+		}
+		else if (!strcmp(var_type, "integer")) {
+			printf("\t%%%d = mul %s %%%d, %%%d\n", current_scope_var, getVarSize(var_type), current_scope_var-2, current_scope_var-1);
+		}
+		current_scope_var++;
+	}
+	else if (!strcmp(type, "minus")) {
+		printf("\t%%%d = sub %s 0, %%%d\n", current_scope_var, getVarSize(var_type), current_scope_var-1);
+		current_scope_var++;
+	}
+	else if (!strcmp(type, "mod")) {
+		printf("\t%%%d = srem i32 %%%d, %%%d\n", current_scope_var, current_scope_var-2, current_scope_var-1);
+		current_scope_var++;
+		printf("\t%%%d = call i32 @mod(i32 %%%d, i32 %%%d);\n", current_scope_var, current_scope_var-2, current_scope_var-1);
+		current_scope_var++;	
+	}
+}
+
+void genExpression(node *n, char* var_type) {
 	if (!is_expression(n->type)) {
 		return;
 	}
-	if (is_expression(n->children[0]->type)) {
-		genExpression(n->children[0]);
-		left = 1;
-	}
-	if (is_expression(n->children[1]->type)) {
-		genExpression(n->children[1]);
-		left = 0;
-	}
-	//printf("%s\n", n->type);
-	if (!strcmp(n->children[0]->type, "IntLit")) {
-		printf("\t%%%d = add i32 %s, 0\n", current_scope_var, n->children[0]->value);
-		current_scope_var++;
-	}
-	if (!strcmp(n->children[1]->type, "IntLit")) {
-		printf("\t%%%d = add i32 %s, 0\n", current_scope_var, n->children[1]->value);
-		current_scope_var++;
-	}
-	if ((is_expression(n->type))) {
-		printf("\t%%%d = %s i32 %%%d, %%%d\n", current_scope_var, getExpression(n->type), current_scope_var-2, current_scope_var-1);
-		/*if (left) {
-			printf("\t%%%d = %s i32 %%%d, %%%d\n", current_scope_var, getExpression(n->type), current_scope_var-1, current_scope_var-2);
+	int i;
+	for (i=0;i<n->n_children;i++) {
+		if (is_expression(n->children[i]->type)) {
+			genExpression(n->children[i], var_type);
 		}
 		else {
-			printf("\t%%%d = %s i32 %%%d, %%%d\n", current_scope_var, getExpression(n->type), current_scope_var-1, current_scope_var-2);
-		}*/
-		current_scope_var++;
+			if (!strcmp(var_type, "integer")) {
+				if (!strcmp(n->children[i]->type, "IntLit")) {
+					printf("\t%%%d = add i32 %s, 0\n", current_scope_var, n->children[i]->value);
+					current_scope_var++;
+				}
+			}
+			else if (!strcmp(var_type, "real")) {
+				if (!strcmp(n->children[i]->type, "IntLit")) {
+					printf("\t%%%d = fadd double %s.0, 0.0\n", current_scope_var, n->children[i]->value);
+					current_scope_var++;
+				}
+				else if (!strcmp(n->children[i]->type, "RealLit")) {
+					printf("\t%%%d = fadd double %s, 0.0\n", current_scope_var, n->children[i]->value);
+					current_scope_var++;
+				}
+			}
+		}
+	}
+	if ((is_expression(n->type))) {
+		printExpression(n, var_type);
 	}
 }
 
-void generateMainInstructions(node* n) {
+void genCall(node* n) {
+	char* function_id = n->children[0]->value;
+	int i;
+	for (i=1;i<n->n_children;i++) {
+		if (!strcmp(n->children[i]->type, "IntLit")) {
+			printf("\t%%%d = add i32 %s, 0\n", current_scope_var, n->children[i]->value);
+			current_scope_var++;
+		}
+		else if (!strcmp(n->children[i]->type, "RealLit")) {
+			printf("\t%%%d = fadd double %s, 0.0\n", current_scope_var, n->children[i]->value);
+			current_scope_var++;
+		}
+		else if (!strcmp(n->children[i]->type, "Boolean")) {
+			printf("\t%%%d = add i1 %s, 0\n", current_scope_var, n->children[i]->value);
+			current_scope_var++;
+		}
+		else if (!strcmp(n->children[i]->type, "Id")) {
+			//TODO
+		}
+		//TODO expr, call
+	}
+	printf("\t%%%d = call %s @%s(", current_scope_var, getVarSize(get_type(n, NULL)), function_id);
+	for (i=1;i<n->n_children;i++) {
+		if (i > 1)
+			printf(", ");
+		printf("%s %%%d", getVarSize(n->children[i]->type), current_scope_var - n->n_children + i);
+	}
+	printf(");\n");
+	current_scope_var++;
+}
+
+char* cur_function_id;
+
+char* escape_str(char* str) {
+	char* sub_str;
+	char* tmp = (char*)malloc(sizeof(char)*strlen(str));
+	int i, j=0;
+	for (i=0;i<strlen(str);i++) {
+		tmp[j] = str[i];
+		if (str[i] == '\'') {
+			if (i > 0)
+				i++;
+		}
+		j++;
+	}
+	return tmp;
+}
+
+void generateInstructions(node* n) {
 	int i;
 	char new_line = 0;
 	char* var = (char*)malloc(sizeof(char)*100);
+	char* token, *token_global = strdup("@"), *token_local = strdup("%");
 	if (!strcmp(n->type, "WriteLn")) {
 		for (i=0;i<n->n_children;i++) {
 			if (i == n->n_children-1) {
 				new_line = 1;
 			}
 			if (!strcmp(n->children[i]->type, "String")) {
-				genPrint("string", n->children[i]->value, new_line);
+				var = escape_str(n->children[i]->value);
+				genPrint("string", var, new_line);
 			}
 			else if (!strcmp(n->children[i]->type, "IntLit")) {
 				genPrint("integer", (char*)n->children[i]->value, new_line);
@@ -1246,12 +1406,26 @@ void generateMainInstructions(node* n) {
 			else if (!strcmp(n->children[i]->type, "RealLit")) {
 				genPrint("real", (char*)n->children[i]->value, new_line);
 			}
+			else if (is_expression(n->children[i]->type)) {
+				char* var_type = getExpressionType(n->children[i]);
+				genExpression(n->children[i], var_type); //TODO calls inside expressions, etc
+				sprintf(var, "%%%d", current_scope_var-1);
+				genPrint(var_type, var, new_line);
+			}
 			else if (!strcmp(n->children[i]->type, "Id")) {
-				char* var_type = get_type(n->children[i]);
+				if (!strcmp(str_to_lower(n->children[i]->value), "paramcount")) {
+					printf("%%%d = call i32 @paramcount()\n", current_scope_var);
+					sprintf(var, "%%%d", current_scope_var);
+					current_scope_var++;
+					genPrint("integer", var, new_line);
+				}
+				char* var_type = get_type(n->children[i], cur_function_id);
 				if (var_type != NULL) {
 					sprintf(var, "%%%d", current_scope_var);
 					if ((!strcmp(var_type, "integer")) || (!strcmp(var_type, "real"))) {
-						printf("\t%%%d = load %s* @%s\n", current_scope_var, getVarSize(var_type), str_to_lower((char*)n->children[i]->value));
+						if (isGlobalVar(str_to_lower((char*)n->children[i]->value))) token = token_global;
+						else token = token_local;
+						printf("\t%%%d = load %s* %s%s\n", current_scope_var, getVarSize(var_type), token, str_to_lower((char*)n->children[i]->value));
 						current_scope_var++;
 						genPrint(var_type, var, new_line);
 					}
@@ -1264,89 +1438,139 @@ void generateMainInstructions(node* n) {
 							printf("\t%%%d = add %s 0, 1\n", current_scope_var, getVarSize(var_type));
 						}
 						else {
-							printf("\t%%%d = load %s* @%s\n", current_scope_var, getVarSize(var_type), bvalue);
+							if (isGlobalVar(bvalue)) token = token_global;
+							else token = token_local;
+							printf("\t%%%d = load %s* %s%s\n", current_scope_var, getVarSize(var_type), token, bvalue);
 						}
 						current_scope_var++;
 						genPrint(var_type, var, new_line);
 					}
 				}
+				//TODO id -> function
 			}
-
+			else if (!strcmp(n->children[i]->type, "Call")) {
+				genCall(n->children[i]);
+				char* function_id = n->children[i]->children[0]->value;
+				char* ret_type = get_type(n->children[i]->children[0], function_id);
+				char* var = (char*)malloc(sizeof(char)*40);
+				sprintf(var, "%%%d", current_scope_var-1);
+				genPrint(ret_type, var, new_line);
+			}
 		}
-		//TODO FUNCS
 	}
 	else if (!strcmp(n->type, "Assign")) {
 		char* a_type = n->children[0]->type;
 		char* b_type = n->children[1]->type;
-		char* var_a_type = get_type(n->children[0]);
-		char* var_b_type = get_type(n->children[1]);
+		char* var_a_type = get_type(n->children[0], cur_function_id);
+		char* var_b_type = get_type(n->children[1], cur_function_id);
 		char* var_size;
 		if (!strcmp(a_type, "Id")) {
-			if (!strcmp(b_type, "Id")) {
-				if (!strcmp(var_a_type, "integer")) {
-					if (!strcmp(var_b_type, "integer")) {
-						printf("\t%%%d = load i32* @%s\n", current_scope_var, str_to_lower(n->children[1]->value));
-						printf("\tstore i32 %%%d, i32* @%s\n", current_scope_var, str_to_lower(n->children[0]->value));
-						current_scope_var++;
+			if (n->children[1]->value != NULL) {
+				if (!strcmp(str_to_lower(n->children[1]->value), "paramcount")) {
+					printf("\t%%%d = call i32 @paramcount()\n", current_scope_var);
+					if (isGlobalVar(str_to_lower(n->children[0]->value))) token = token_global;
+					else token = token_local;
+					printf("\tstore i32 %%%d, i32* %s%s\n", current_scope_var, token, str_to_lower(n->children[0]->value));
+					current_scope_var++;
+				}
+			}
+			if (b_type != NULL) {
+				if (!strcmp(b_type, "Id")) { //ID := ID
+					if (!strcmp(var_a_type, "integer")) {
+						if (!strcmp(var_b_type, "integer")) {
+							if (isGlobalVar(str_to_lower(n->children[1]->value))) token = token_global;
+							else token = token_local;
+							printf("\t%%%d = load i32* %s%s\n", current_scope_var, token, str_to_lower(n->children[1]->value));
+							if (isGlobalVar(str_to_lower(n->children[0]->value))) token = token_global;
+							else token = token_local;
+							printf("\tstore i32 %%%d, i32* %s%s\n", current_scope_var, token, str_to_lower(n->children[0]->value));
+							current_scope_var++;
+						}
 					}
+					else if (!strcmp(var_a_type, "real")) {
+						if (!strcmp(var_b_type, "integer")) {
+							if (isGlobalVar(str_to_lower(n->children[1]->value))) token = token_global;
+							else token = token_local;
+							printf("\t%%%d = load i32* %s%s\n", current_scope_var, token, str_to_lower(n->children[1]->value));
+							current_scope_var++;
+							printf("\t%%%d = sitofp i32 %%%d to double\n", current_scope_var, current_scope_var-1);
+							if (isGlobalVar(str_to_lower(n->children[0]->value))) token = token_global;
+							else token = token_local;
+							printf("\tstore double %%%d, double* %s%s\n", current_scope_var, token, str_to_lower(n->children[0]->value));
+							current_scope_var++;
+						}
+						else if (!strcmp(var_b_type, "real")) {
+							if (isGlobalVar(str_to_lower(n->children[1]->value))) token = token_global;
+							else token = token_local;
+							printf("\t%%%d = load double* %s%s\n", current_scope_var, token, str_to_lower(n->children[1]->value));
+							if (isGlobalVar(str_to_lower(n->children[0]->value))) token = token_global;
+							else token = token_local;
+							printf("\tstore double %%%d, double* %s%s\n", current_scope_var, token, str_to_lower(n->children[0]->value));
+							current_scope_var++;
+						}
+					}
+					else if (!strcmp(var_a_type, "boolean")) {
+						if (!strcmp(str_to_lower(n->children[1]->value), "true")) {
+							if (isGlobalVar(str_to_lower(n->children[0]->value))) token = token_global;
+							else token = token_local;
+							printf("\tstore i1 1, i1* %s%s\n", token, str_to_lower(n->children[0]->value));
+						}
+						else if (!strcmp(str_to_lower(n->children[1]->value), "false")) {
+							if (isGlobalVar(str_to_lower(n->children[0]->value))) token = token_global;
+							else token = token_local;
+							printf("\tstore i1 0, i1* %s%s\n", token, str_to_lower(n->children[0]->value));
+						}
+						else if (!strcmp(var_b_type, "boolean")) {
+							if (isGlobalVar(str_to_lower(n->children[1]->value))) token = token_global;
+							else token = token_local;
+							printf("\t%%%d = load i1* %s%s\n", current_scope_var, token, str_to_lower(n->children[1]->value));
+							if (isGlobalVar(str_to_lower(n->children[0]->value))) token = token_global;
+							else token = token_local;
+							printf("\tstore i1 %%%d, i1* %s%s\n", current_scope_var, token, str_to_lower(n->children[0]->value));
+							current_scope_var++;
+						}
+					}
+				}
+				else if (is_expression(b_type)) {
+					char* var_type = get_type(n->children[0], cur_function_id);
+					genExpression(n->children[1], var_type); //TODO calls inside expressions, etc
+					if (isGlobalVar(str_to_lower(n->children[0]->value))) token = token_global;
+					else token = token_local;
+					printf("\tstore %s %%%d, %s* %s%s\n", getVarSize(var_type), current_scope_var-1, getVarSize(var_type), token, n->children[0]->value);
+				}
+				else if (!strcmp(b_type, "Call")) {
+					genCall(n->children[i]);
+					char* function_id = n->children[i]->children[0]->value;
+					char* ret_type = get_type(n->children[i]->children[0], function_id);
+					if (isGlobalVar(str_to_lower(n->children[0]->value))) token = token_global;
+					else token = token_local;
+					printf("store %s %%%d, %s* %s%s\n", getVarSize(ret_type), current_scope_var-1, getVarSize(ret_type), token, str_to_lower(n->children[0]->value));
+				}
+				else if (!strcmp(var_a_type, "integer")) {
+					if (isGlobalVar(str_to_lower(n->children[0]->value))) token = token_global;
+					else token = token_local;
+					printf("\tstore i32 %s, i32* %s%s\n", n->children[1]->value, token, str_to_lower(n->children[0]->value));
 				}
 				else if (!strcmp(var_a_type, "real")) {
 					if (!strcmp(var_b_type, "integer")) {
-						printf("\t%%%d = load i32* @%s\n", current_scope_var, str_to_lower(n->children[1]->value));
-						current_scope_var++;
-						printf("\t%%%d = sitofp i32 %%%d to double\n", current_scope_var, current_scope_var-1); 
-						printf("\tstore double %%%d, double* @%s\n", current_scope_var,  str_to_lower(n->children[0]->value));
-						current_scope_var++;
-					}
-					else if (!strcmp(var_b_type, "real")) {
-						printf("\t%%%d = load double* @%s\n", current_scope_var, str_to_lower(n->children[1]->value));
-						printf("\tstore double %%%d, double* @%s\n", current_scope_var, str_to_lower(n->children[0]->value));
-						current_scope_var++;
-					}
-				}
-				else if (!strcmp(var_a_type, "boolean")) {
-					if (!strcmp(str_to_lower(n->children[1]->value), "true")) {
-						printf("\tstore i1 1, i1* @%s\n", str_to_lower(n->children[0]->value));
-					}
-					else if (!strcmp(str_to_lower(n->children[1]->value), "false")) {
-						printf("\tstore i1 0, i1* @%s\n", str_to_lower(n->children[0]->value));
-					}
-					else if (!strcmp(var_b_type, "boolean")) {
-						printf("\t%%%d = load i1* @%s\n", current_scope_var, str_to_lower(n->children[1]->value));
-						printf("\tstore i1 %%%d, i1* @%s\n", current_scope_var, str_to_lower(n->children[0]->value));
-						current_scope_var++;
-					}
-				}
-			}
-			else if (is_expression(b_type)) {
-				genExpression(n->children[1]); //TODO calls inside expressions, etc
-				//check var types...
-				printf("\tstore i32 %%%d, i32* @%s\n", current_scope_var-1, n->children[0]->value);
-			}
-			else {
-				if (!strcmp(var_a_type, "integer")) {
-					printf("\tstore i32 %s, i32* @%s\n", n->children[1]->value, str_to_lower(n->children[0]->value));
-				}
-				else if (!strcmp(var_a_type, "real")) {
-					if (!strcmp(var_b_type, "integer")) {
-						printf("\tstore double %s.0, double* @%s\n", n->children[1]->value, str_to_lower(n->children[0]->value));
+						if (isGlobalVar(str_to_lower(n->children[0]->value))) token = token_global;
+						else token = token_local;
+						printf("\tstore double %s.0, double* %s%s\n", n->children[1]->value, token, str_to_lower(n->children[0]->value));
 					}
 					else if (!strcmp(var_b_type, "real")){
-						printf("\tstore double %s, double* @%s\n", get_double(n->children[1]->value), str_to_lower(n->children[0]->value));
+						if (isGlobalVar(str_to_lower(n->children[0]->value))) token = token_global;
+						else token = token_local;
+						printf("\tstore double %s, double* %s%s\n", get_double(n->children[1]->value), token, str_to_lower(n->children[0]->value));
 					}
 				}
 			}
-			//TODO call etc
-		}
-		else {
-			//TODO func = etc
 		}
 	}
 	else if (!strcmp(n->type, "ValParam")) {
 		if (n->n_children == 2) {
 			char* cindex = (char*)n->children[0]->value;
 			int index = atoi(cindex);
-			char* var = n->children[1]->value;
+			char* var = str_to_lower(n->children[1]->value);
 			printf("\t%%%d = add i32 %d, 0\n", current_scope_var, index);
 			printf("\t%%%d = call i32 @valparam(i32 %%%d)\n", current_scope_var+1, current_scope_var);
 			printf("\tstore i32 %%%d, i32* @%s\n", current_scope_var+1, var);
@@ -1354,12 +1578,82 @@ void generateMainInstructions(node* n) {
 		}
 	}
 	for (i=0;i<n->n_children;i++) {
-		generateMainInstructions(n->children[i]);
+		generateInstructions(n->children[i]);
+	}
+}
+
+void generateFuncParams(node* a) {
+	int param = 0;
+	char* id = a->children[0]->value;
+	char* ret_type = get_type(a->children[0], id);
+	printf("\ndefine %s @%s(", getVarSize(ret_type), id);
+	symbol* table = get_function_table(id);
+	symbol* aux = table;
+	while(aux != NULL) {
+		if (aux->flag != NULL) {
+			if (!strcmp(aux->flag, "param")) {
+				if (param > 0)
+					printf(", ");
+				printf("%s %%_%s", getVarSize(aux->type), aux->name);
+				param++;
+			}
+		}
+		aux = aux->next;
+	}
+	printf(") {\n");
+	aux = table;
+	while(aux != NULL) {
+		if (aux->flag != NULL) {
+			if (!strcmp(aux->flag, "param")) {
+				printf("\t%%%s = alloca %s\n", aux->name, getVarSize(aux->type));
+				printf("\tstore %s %%_%s, %s* %%%s\n", getVarSize(aux->type), aux->name, getVarSize(aux->type), aux->name);
+				param++;
+			}
+			else {
+				printf("\t%%%s = alloca %s\n", aux->name, getVarSize(aux->type));
+			}
+		}
+		else {
+			printf("\t%%%s = alloca %s\n", aux->name, getVarSize(aux->type));
+		}
+		aux = aux->next;
+	}
+}
+
+void generateFunctions(node* n) {
+	int i, j;
+	char* id;
+	for (i=0;i<n->n_children;i++) {
+		if (!strcmp(n->children[i]->type, "FuncDecl")) {
+			id = n->children[i]->children[0]->value;
+			cur_function_id = strdup(id);
+			for (j=i;j<n->n_children;j++) {
+				if (!strcmp(n->children[j]->type, "FuncDef2")) {
+					if (!strcmp(n->children[j]->children[0]->value, id)) {
+						generateFuncParams(n->children[i]);
+						current_scope_var = 1;
+						generateInstructions(n->children[j]);
+						char* ret_type = get_type(n->children[j]->children[0], id);
+						printf("\t%%%d = load %s* %%%s\n", current_scope_var, getVarSize(ret_type), id);
+						printf("\tret %s %%%d\n}\n", getVarSize(ret_type), current_scope_var);
+					}
+				}
+			}
+		}
+		else if (!strcmp(n->children[i]->type, "FuncDef")) {
+			generateFuncParams(n->children[i]);
+			current_scope_var = 1;
+			id = n->children[i]->children[0]->value;
+			cur_function_id = strdup(id);
+			generateInstructions(n->children[i]);
+			char* ret_type = get_type(n->children[i]->children[0], id);
+			printf("\t%%%d = load %s* %%%s\n", current_scope_var, getVarSize(ret_type), id);
+			printf("\tret %s %%%d\n}\n", getVarSize(ret_type), current_scope_var);
+		}
 	}
 }
 
 void generateMain() {
-	generateMainVars(parsing_tree->children[1]);
 	printf("\ndefine i32 @main(i32 %%argc, i8** %%argv) {\n");
 	printf("\t%%1 = alloca i32\n");
 	printf("\t%%2 = alloca i8**\n");
@@ -1370,7 +1664,7 @@ void generateMain() {
 	printf("\t%%4 = load i8*** %%2\n");
 	printf("\tstore i8** %%4, i8*** @argv\n\n");
 	current_scope_var = 5;
-	generateMainInstructions(parsing_tree->children[3]);
+	generateInstructions(parsing_tree->children[3]);
 	printf("\tret i32 0\n}\n");
 	printf("\n");
 }
@@ -1400,7 +1694,9 @@ void generateGlobalStrings() {
 
 void generateCode() {
 	generateDeclarations();
-	generateFunctions();
+	generateMainVars(parsing_tree->children[1]);
+	generateFunctions(parsing_tree->children[2]);
+	cur_function_id = NULL;
 	generateMain();
 	generateGlobalStrings();
 }

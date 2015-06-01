@@ -1,0 +1,38 @@
+program gcd2(output);
+var x, y: integer; numero: integer;
+function gcd2(A, B: real) : integer ; forward;
+function gcd(A, B, C: integer): integer;
+  var i, m: integer;
+ begin
+ i := 9;
+ m := 10;
+ writeln('gcd ', a , ' ', b, ' ', i, ' ', m);
+ writeln(C);
+ gcd := 44;
+ end;
+function gcd2;
+ var j, k: integer;
+ begin
+  j := 11;
+  k := 12;
+  writeln('gcd2 ', a, ' ', b, ' ', j, ' ', k);
+  gcd2 := 55;
+  x := 299;
+ end;
+begin
+ writeln('main');
+ writeln(gcd(2, 3, 4));
+ writeln(gcd2(4.2, 5.9));
+ writeln(x);
+ writeln(paramcount);
+ x := gcd(2, 3, 4);
+ writeln(x);
+ (*if paramcount >= 2 then
+ begin
+ val(paramstr(1), x);
+ val(paramstr(2), y);
+ writeln(gcd(x, y))
+ end
+ else
+ writeln('Error: two parameters required.')*)
+end.

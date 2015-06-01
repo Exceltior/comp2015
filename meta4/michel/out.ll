@@ -1,6 +1,7 @@
 @_false = global i1 0
 @_true = global i1 1
-@_k = global i32 0
+@_k = global i1 0
+@_m = global double 0.000000e+00
 @argc_ = global i32 0
 @argv_ = global i8** null
 define i32 @main(i32 %argc, i8** %argv) {
@@ -13,19 +14,12 @@ store i32 %3, i32* @argc_
 %4 = load i8*** %2
 store i8** %4, i8*** @argv_
 
-%5 = add i32 2, 0
-%6 = add i32 2, 0
-%7 = add i32 %5, %6
-%8 = add i32 2, 0
-%9 = add i32 %7, %8
-%10 = add i32 2, 0
-%11 = add i32 %9, %10
-%12 = add i32 2, 0
-%13 = sub i32 %11, %12
-store i32 %13, i32* @_k
-%14 = load i32* @_k
-%15 = call i32 (i8*, ...)* @printf(i8* getelementptr inbounds ([3 x i8]* @.str_3, i32 0, i32 0), i32 %14)
-%16 = call i32 (i8*, ...)* @printf(i8* getelementptr inbounds ([2 x i8]* @.str_0, i32 0, i32 0))
+%5 = add i32 28, 0
+%6 = add i32 6, 0
+%7 = srem i32 %5, %6
+%8 = call i32 @modi(i32 %7, i32 %6)
+%9 = call i32 (i8*, ...)* @printf(i8* getelementptr inbounds ([3 x i8]* @.str_3, i32 0, i32 0), i32 %8)
+%10 = call i32 (i8*, ...)* @printf(i8* getelementptr inbounds ([2 x i8]* @.str_0, i32 0, i32 0))
 ret i32 0
 }
 @.str_0 = private unnamed_addr constant [2 x i8] c"\0A\00"

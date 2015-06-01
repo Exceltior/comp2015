@@ -6,11 +6,10 @@ begin
 a:= 1;
 b:= 2;
 writeln('a=',a,' ','b=',b);
-c:=true;
 d:=c;
 writeln('a=',a,' ','c=',c,' ','d=',d);
 e:=a;
-f:=3;
+f:=3.23;
 writeln('reals: e=',e,' f=',f);
 writeln(1);
 writeln(1,' ',2,' ',3);

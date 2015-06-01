@@ -1,6 +1,5 @@
 program gcd(output);
-var k: integer;
+var k: boolean; m: real;
 begin
-    k := 2*4-2*2;
-    writeln(k)
+    writeln(28 mod 6);
 end.
